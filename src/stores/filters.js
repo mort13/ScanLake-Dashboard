@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useDbStore } from './db'
+import { useAliasesStore } from './aliases'
 
 export const useFiltersStore = defineStore('filters', () => {
   // ── Filter State ───────────────────────────────────────────────
@@ -56,9 +57,10 @@ export const useFiltersStore = defineStore('filters', () => {
           ORDER BY val
         `),
       ])
-      acLocation.value = locs.map((r) => r.val)
-      acDeposit.value = deps.map((r) => r.val)
-      acMaterial.value = mats.map((r) => r.val)
+      const al = useAliasesStore()
+      acLocation.value = al.applyToList('location',  locs.map((r) => r.val))
+      acDeposit.value  = al.applyToList('deposit',   deps.map((r) => r.val))
+      acMaterial.value = al.applyToList('material',  mats.map((r) => r.val))
     } catch (err) {
       console.warn('[filters] autocomplete load failed:', err.message)
     }
@@ -75,22 +77,32 @@ export const useFiltersStore = defineStore('filters', () => {
     const hasScans = tables === 'both' || tables === 'scans'
     const hasComps = tables === 'both' || tables === 'compositions'
 
+    const al = useAliasesStore()
+
     if (locationFilters.value.length > 0 && hasScans) {
       // defensive: support both plain strings and legacy {value,negated} objects
-      const vals = locationFilters.value.map((f) => sqlStr(typeof f === 'string' ? f : f.value)).join(', ')
-      parts.push(`(s.gravity_well IN (${vals}) OR s.system IN (${vals}) OR s.region IN (${vals}))`)
+      // expand alias display names to all underlying raw values
+      const rawVals = locationFilters.value
+        .flatMap((f) => al.expandAlias('location', typeof f === 'string' ? f : f.value))
+        .map(sqlStr)
+        .join(', ')
+      parts.push(`(s.gravity_well IN (${rawVals}) OR s.system IN (${rawVals}) OR s.region IN (${rawVals}))`)
     }
 
     if (depositFilters.value.length > 0 && hasScans) {
-      const pos = depositFilters.value.filter((m) => !m.negated).map((m) => sqlStr(m.value))
-      const neg = depositFilters.value.filter((m) => m.negated).map((m) => sqlStr(m.value))
+      const pos = depositFilters.value.filter((m) => !m.negated)
+        .flatMap((m) => al.expandAlias('deposit', m.value)).map(sqlStr)
+      const neg = depositFilters.value.filter((m) => m.negated)
+        .flatMap((m) => al.expandAlias('deposit', m.value)).map(sqlStr)
       if (pos.length > 0) parts.push(`s.deposit IN (${pos.join(', ')})`)
       if (neg.length > 0) parts.push(`COALESCE(s.deposit,'') NOT IN (${neg.join(', ')})`)
     }
 
     if (materialFilters.value.length > 0 && hasComps) {
-      const pos = materialFilters.value.filter((m) => !m.negated).map((m) => sqlStr(m.value))
-      const neg = materialFilters.value.filter((m) => m.negated).map((m) => sqlStr(m.value))
+      const pos = materialFilters.value.filter((m) => !m.negated)
+        .flatMap((m) => al.expandAlias('material', m.value)).map(sqlStr)
+      const neg = materialFilters.value.filter((m) => m.negated)
+        .flatMap((m) => al.expandAlias('material', m.value)).map(sqlStr)
       if (pos.length > 0) parts.push(`c.type IN (${pos.join(', ')})`)
       if (neg.length > 0) parts.push(`c.type NOT IN (${neg.join(', ')})`)
     }

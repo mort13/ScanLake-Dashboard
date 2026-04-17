@@ -1,0 +1,73 @@
+{
+  "_comment": "Alias configuration for ScanLake Dashboard. Each entry combines multiple raw values under one display name. Supported dimensions: deposit, material, user_name, location (covers gravity_well, system and region).",
+
+  "deposit": [
+    { "display": "Example Deposit", "values": ["ExampleRaw1", "ExampleRaw2"] },
+    { "display": "Aluminium", "values": ["aluminum", "aluminium"] },
+    { "display": "Agricium", "values": ["agricium"] },
+    { "display": "Aphorite", "values": ["aphorite"] },
+    { "display": "Aslarite", "values": ["aslarite"] },
+    { "display": "Beryl", "values": ["beryl"] },
+    { "display": "Bexalite", "values": ["bexalite"] },
+    { "display": "Borase", "values": ["borase"] },
+    { "display": "Copper", "values": ["copper"] },
+    { "display": "Dolivine", "values": ["dolivine"] },
+    { "display": "Feynmaline", "values": ["feynmaline"] },
+    { "display": "Gold", "values": ["gold"] },
+    { "display": "Hadanite", "values": ["hadanite"] },
+    { "display": "Hephaestanite", "values": ["hephaestanite"] },
+    { "display": "Ice", "values": ["ice"] },
+    { "display": "Iron", "values": ["iron"] },
+    { "display": "Laranite", "values": ["laranite"] },
+    { "display": "Lindinium", "values": ["lindinium"] },
+    { "display": "Quartz", "values": ["quartz"] },
+    { "display": "Riccite", "values": ["riccite"] },
+    { "display": "Silicon", "values": ["silicon"] },
+    { "display": "Stileron", "values": ["stileron"] },
+    { "display": "Taranite", "values": ["taranite"] },
+    { "display": "Tin", "values": ["tin"] },
+    { "display": "Titanium", "values": ["titanium"] },
+    { "display": "Torite", "values": ["torite"] },
+    { "display": "Tungsten", "values": ["tungsten"] }
+  ],
+
+  "material": [
+    { "display": "Example Material", "values": ["ExampleRaw1", "ExampleRaw2"] },
+    { "display": "Aluminium", "values": ["aluminum", "aluminium"] },
+    { "display": "Agricium", "values": ["agricium"] },
+    { "display": "Aphorite", "values": ["aphorite"] },
+    { "display": "Aslarite", "values": ["aslarite"] },
+    { "display": "Beryl", "values": ["beryl"] },
+    { "display": "Bexalite", "values": ["bexalite"] },
+    { "display": "Borase", "values": ["borase"] },
+    { "display": "Copper", "values": ["copper"] },
+    { "display": "Corundum", "values": ["corundum"] },
+    { "display": "Dolivine", "values": ["dolivine"] },
+    { "display": "Feynmaline", "values": ["feynmaline"] },
+    { "display": "Gold", "values": ["gold"] },
+    { "display": "Hadanite", "values": ["hadanite"] },
+    { "display": "Hephaestanite", "values": ["hephaestanite"] },
+    { "display": "Ice", "values": ["ice"] },
+    { "display": "Iron", "values": ["iron"] },
+    { "display": "Laranite", "values": ["laranite"] },
+    { "display": "Lindinium", "values": ["lindinium"] },
+    { "display": "Quartz", "values": ["quartz"] },
+    { "display": "Riccite", "values": ["riccite"] },
+    { "display": "Savrilium", "values": ["savrilium"] },
+    { "display": "Silicon", "values": ["silicon"] },
+    { "display": "Stileron", "values": ["stileron"] },
+    { "display": "Taranite", "values": ["taranite"] },
+    { "display": "Tin", "values": ["tin"] },
+    { "display": "Titanium", "values": ["titanium"] },
+    { "display": "Torite", "values": ["torite"] },
+    { "display": "Tungsten", "values": ["tungsten"] }
+  ],
+
+  "user_name": [
+    { "display": "Example User", "values": ["ExampleRaw1", "ExampleRaw2"] }
+  ],
+
+  "location": [
+    { "display": "Example Location", "values": ["ExampleRaw1", "ExampleRaw2"] }
+  ]
+}

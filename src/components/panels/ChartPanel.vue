@@ -15,6 +15,7 @@ import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import Plotly from 'plotly.js-dist-min'
 import { useDbStore } from '@/stores/db'
 import { useFiltersStore } from '@/stores/filters'
+import { useAliasesStore } from '@/stores/aliases'
 import { getBuiltinSQL } from '@/lib/queries'
 
 const props = defineProps({
@@ -23,6 +24,7 @@ const props = defineProps({
 
 const db = useDbStore()
 const filters = useFiltersStore()
+const aliases = useAliasesStore()
 
 const plotEl = ref(null)
 const loading = ref(true)
@@ -36,7 +38,13 @@ async function refresh() {
 
   try {
     const where = filters.buildWhere()
-    const sql = props.panel.sql || getBuiltinSQL(props.panel.builtinKey, where)
+    const ae = {
+      deposit:   aliases.buildCaseExpr('s.deposit',   'deposit'),
+      material:  aliases.buildCaseExpr('c.type',      'material'),
+      user_name: aliases.buildCaseExpr('s.user_name', 'user_name'),
+      location:  aliases.buildCaseExpr('s.gravity_well', 'location'),
+    }
+    const sql = props.panel.sql || getBuiltinSQL(props.panel.builtinKey, where, ae)
     if (!sql) throw new Error('No SQL defined for panel')
 
     const rows = await db.runQuery(sql)

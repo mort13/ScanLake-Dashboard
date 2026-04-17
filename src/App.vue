@@ -29,6 +29,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useDbStore } from '@/stores/db'
 import { useFiltersStore } from '@/stores/filters'
 import { useDashboardStore } from '@/stores/dashboard'
+import { useAliasesStore } from '@/stores/aliases'
 import AppHeader from '@/components/AppHeader.vue'
 import FilterSidebar from '@/components/FilterSidebar.vue'
 import DashboardGrid from '@/components/DashboardGrid.vue'
@@ -37,10 +38,14 @@ import QueryEditor from '@/components/QueryEditor.vue'
 const db = useDbStore()
 const filters = useFiltersStore()
 const dashboard = useDashboardStore()
+const aliases = useAliasesStore()
 
 const queryEditorOpen = ref(false)
 
 onMounted(async () => {
+  // Load aliases config (optional — silently skipped if file missing)
+  await aliases.load()
+
   // Load dashboard config (localStorage first, then default)
   const loaded = dashboard.loadFromStorage()
   if (!loaded) await dashboard.loadDefault()

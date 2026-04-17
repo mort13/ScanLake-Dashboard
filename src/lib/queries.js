@@ -1,14 +1,23 @@
 /**
  * Built-in SQL query factory.
- * Each function receives a WHERE fragment string (already valid SQL, no leading AND)
- * and returns a complete SQL SELECT string.
+ * @param {string} key    - Query identifier
+ * @param {string} where  - WHERE fragment (no leading AND/WHERE)
+ * @param {Object} ae     - Alias expressions: SQL CASE WHEN strings keyed by dimension.
+ *                          Keys: deposit, material, user_name, location.
+ *                          Supply via aliasesStore.buildCaseExpr(). Defaults to raw columns.
  */
 
 const INERT = `('inert_materials','none','Inert Materials','inert')`
 
-export function getBuiltinSQL(key, where) {
+export function getBuiltinSQL(key, where, ae = {}) {
   const w = where && where !== '1=1' ? `AND (${where})` : ''
   const wScan = where && where !== '1=1' ? `WHERE ${where}` : ''
+
+  // Alias expressions — fall back to raw column references when not provided
+  const aDeposit  = ae.deposit   || 's.deposit'
+  const aMaterial = ae.material  || 'c.type'
+  const aUser     = ae.user_name || 's.user_name'
+  const aLocation = ae.location  || 's.gravity_well'
 
   switch (key) {
     case 'db_stats':
@@ -28,32 +37,32 @@ export function getBuiltinSQL(key, where) {
 
     case 'scans_per_gravity_well':
       return `
-        SELECT s.gravity_well, COUNT(DISTINCT s.capture_id) AS scan_count
+        SELECT (${aLocation}) AS gravity_well, COUNT(DISTINCT s.capture_id) AS scan_count
         FROM scans s
         JOIN compositions c ON s.capture_id = c.capture_id
         WHERE c.type NOT IN ${INERT} ${w}
-        GROUP BY s.gravity_well
+        GROUP BY gravity_well
         ORDER BY scan_count DESC
       `
 
     case 'scans_per_user':
       return `
-        SELECT s.user_name, COUNT(DISTINCT s.capture_id) AS scan_count
+        SELECT (${aUser}) AS user_name, COUNT(DISTINCT s.capture_id) AS scan_count
         FROM scans s
         LEFT JOIN compositions c ON s.capture_id = c.capture_id
         WHERE (c.type NOT IN ${INERT} OR c.type IS NULL) ${w}
-        GROUP BY s.user_name
+        GROUP BY user_name
         ORDER BY scan_count DESC
       `
 
     case 'unique_combos_per_user':
       return `
-        SELECT s.user_name,
+        SELECT (${aUser}) AS user_name,
                COUNT(DISTINCT s.system || '|' || s.gravity_well || '|' || s.region) AS unique_locations
         FROM scans s
         LEFT JOIN compositions c ON s.capture_id = c.capture_id
         WHERE (c.type NOT IN ${INERT} OR c.type IS NULL) ${w}
-        GROUP BY s.user_name
+        GROUP BY user_name
         ORDER BY unique_locations DESC
       `
 
@@ -81,7 +90,9 @@ export function getBuiltinSQL(key, where) {
 
     case 'mass_vs_resistance':
       return `
-        SELECT s.mass, s.resistance, s.instability, s.deposit, s.gravity_well
+        SELECT s.mass, s.resistance, s.instability,
+               (${aDeposit})  AS deposit,
+               (${aLocation}) AS gravity_well
         FROM scans s
         LEFT JOIN compositions c ON s.capture_id = c.capture_id
         WHERE (c.type NOT IN ${INERT} OR c.type IS NULL) ${w}
@@ -89,21 +100,21 @@ export function getBuiltinSQL(key, where) {
 
     case 'material_pie':
       return `
-        SELECT c.type AS material_type, COUNT(*) AS count
+        SELECT (${aMaterial}) AS material_type, COUNT(*) AS count
         FROM compositions c
         JOIN scans s ON s.capture_id = c.capture_id
         WHERE c.type NOT IN ${INERT} ${w}
-        GROUP BY c.type
+        GROUP BY material_type
         ORDER BY count DESC
       `
 
     case 'deposit_pie':
       return `
-        SELECT s.deposit, COUNT(*) AS count
+        SELECT (${aDeposit}) AS deposit, COUNT(*) AS count
         FROM scans s
         LEFT JOIN compositions c ON s.capture_id = c.capture_id
         WHERE (c.type NOT IN ${INERT} OR c.type IS NULL) ${w}
-        GROUP BY s.deposit
+        GROUP BY deposit
         ORDER BY count DESC
       `
 
