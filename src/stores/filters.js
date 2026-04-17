@@ -9,7 +9,10 @@ export const useFiltersStore = defineStore('filters', () => {
   const locationFilters = ref([])
 
   // Deposit: array of { value: string, negated: boolean }
-  const depositFilters = ref([])
+  const depositFilters = ref([
+    { value: "num", negated: true },
+    { value: "none", negated: true }
+  ])
 
   // Material: array of { value: string, negated: boolean }
   const materialFilters = ref([])
