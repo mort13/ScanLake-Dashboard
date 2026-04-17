@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "panels": [
+    {
+      "id": "p-stats",
+      "type": "stats",
+      "title": "Database Statistics",
+      "filterable": false,
+      "builtinKey": "db_stats"
+    },
+    {
+      "id": "p-scans-per-gw",
+      "type": "chart",
+      "title": "Scans per Gravity Well",
+      "filterable": true,
+      "builtinKey": "scans_per_gravity_well",
+      "chart": { "type": "bar", "x": "gravity_well", "y": "scan_count", "colorscale": "Viridis", "orientation": "v" }
+    },
+    {
+      "id": "p-scans-per-user",
+      "type": "chart",
+      "title": "Scans per User",
+      "filterable": true,
+      "builtinKey": "scans_per_user",
+      "chart": { "type": "bar", "x": "user_name", "y": "scan_count", "colorscale": "Viridis", "orientation": "v" }
+    },
+    {
+      "id": "p-unique-combos",
+      "type": "chart",
+      "title": "Unique System/GW/Region per User",
+      "filterable": true,
+      "builtinKey": "unique_combos_per_user",
+      "chart": { "type": "bar", "x": "user_name", "y": "unique_locations", "colorscale": "Viridis", "orientation": "v" }
+    },
+    {
+      "id": "p-quality-count",
+      "type": "chart",
+      "title": "Quality Distribution (count)",
+      "filterable": true,
+      "builtinKey": "quality_bins_count",
+      "chart": { "type": "bar", "x": "quality_bin", "y": "count", "colorscale": "Viridis", "orientation": "v" }
+    },
+    {
+      "id": "p-quality-volume",
+      "type": "chart",
+      "title": "Quality vs Material Volume",
+      "filterable": true,
+      "builtinKey": "quality_bins_volume",
+      "chart": { "type": "bar", "x": "quality_bin", "y": "material_volume", "colorscale": "Viridis", "orientation": "v" }
+    },
+    {
+      "id": "p-mass-resistance",
+      "type": "chart",
+      "title": "Mass vs Resistance",
+      "filterable": true,
+      "builtinKey": "mass_vs_resistance",
+      "chart": { "type": "scatter", "x": "mass", "y": "resistance", "color": "instability", "colorscale": "Viridis" }
+    },
+    {
+      "id": "p-material-pie",
+      "type": "chart",
+      "title": "Material Types",
+      "filterable": true,
+      "builtinKey": "material_pie",
+      "chart": { "type": "pie", "x": "material_type", "y": "count", "colorscale": "Viridis" }
+    },
+    {
+      "id": "p-deposit-pie",
+      "type": "chart",
+      "title": "Deposit Types",
+      "filterable": true,
+      "builtinKey": "deposit_pie",
+      "chart": { "type": "pie", "x": "deposit", "y": "count", "colorscale": "Viridis" }
+    }
+  ],
+  "layout": [
+    { "id": "p-stats",          "x": 0, "y": 0,  "w": 12, "h": 2 },
+    { "id": "p-scans-per-gw",   "x": 0, "y": 2,  "w": 6,  "h": 4 },
+    { "id": "p-scans-per-user", "x": 6, "y": 2,  "w": 6,  "h": 4 },
+    { "id": "p-unique-combos",  "x": 0, "y": 6,  "w": 6,  "h": 4 },
+    { "id": "p-quality-count",  "x": 6, "y": 6,  "w": 6,  "h": 4 },
+    { "id": "p-quality-volume", "x": 0, "y": 10, "w": 6,  "h": 4 },
+    { "id": "p-mass-resistance","x": 6, "y": 10, "w": 6,  "h": 4 },
+    { "id": "p-material-pie",   "x": 0, "y": 14, "w": 6,  "h": 4 },
+    { "id": "p-deposit-pie",    "x": 6, "y": 14, "w": 6,  "h": 4 }
+  ]
+}
