@@ -10,6 +10,7 @@
     { "display": "Beryl", "values": ["beryl"] },
     { "display": "Bexalite", "values": ["bexalite"] },
     { "display": "Borase", "values": ["borase"] },
+    { "display": "Corundum", "values": ["corundum", "corunum"] },
     { "display": "Copper", "values": ["copper"] },
     { "display": "Dolivine", "values": ["dolivine"] },
     { "display": "Feynmaline", "values": ["feynmaline"] },
@@ -34,7 +35,7 @@
 
   "material": [
     { "display": "Example Material", "values": ["ExampleRaw1", "ExampleRaw2"] },
-    { "display": "Aluminium", "values": ["aluminum", "aluminium"] },
+    { "display": "Aluminium", "values": ["aluminum", "aluminium","Aluminum", "Aluminium"] },
     { "display": "Agricium", "values": ["agricium"] },
     { "display": "Aphorite", "values": ["aphorite"] },
     { "display": "Aslarite", "values": ["aslarite"] },
@@ -42,7 +43,7 @@
     { "display": "Bexalite", "values": ["bexalite"] },
     { "display": "Borase", "values": ["borase"] },
     { "display": "Copper", "values": ["copper"] },
-    { "display": "Corundum", "values": ["corundum", "corunum"] },
+    { "display": "Corundum", "values": ["corundum", "corunum","Corundum", "Corunum"] },
     { "display": "Dolivine", "values": ["dolivine"] },
     { "display": "Feynmaline", "values": ["feynmaline"] },
     { "display": "Gold", "values": ["gold"] },

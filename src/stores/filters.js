@@ -15,7 +15,10 @@ export const useFiltersStore = defineStore('filters', () => {
   ])
 
   // Material: array of { value: string, negated: boolean }
-  const materialFilters = ref([])
+  const materialFilters = ref([
+    { value: "num", negated: true },
+    { value: "none", negated: true }
+  ])
 
   // Quality range [min, max], 0–1000
   const qualityRange = ref([0, 1000])
