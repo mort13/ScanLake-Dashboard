@@ -2,9 +2,6 @@ name = "scanlake-dashboard"
 pages_build_output_dir = "dist"
 compatibility_date = "2025-01-01"
 
-[build]
-command = "npm run build"
-
 # GATEWAY_API_KEY must be set as a secret — never committed to source.
 # In CF Pages dashboard: Settings → Environment variables → Add secret: GATEWAY_API_KEY
 # For local wrangler dev: wrangler pages dev dist --binding GATEWAY_API_KEY=sk_...
