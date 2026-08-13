@@ -23,6 +23,12 @@ export const useFiltersStore = defineStore('filters', () => {
   // Quality range [min, max], 0–1000
   const qualityRange = ref([0, 1000])
 
+  // Date range [from, to] as 'YYYY-MM-DD' strings, null = unconstrained
+  const dateRange  = ref([null, null])
+  const dateColumn = ref(null)   // discovered TIMESTAMP/DATE column in scans
+  const dateMin    = ref(null)   // earliest date in the dataset
+  const dateMax    = ref(null)   // latest date in the dataset
+
   // ── Autocomplete ───────────────────────────────────────────────
   const acLocation = ref([])
   const acDeposit = ref([])
@@ -34,7 +40,9 @@ export const useFiltersStore = defineStore('filters', () => {
       depositFilters.value.length > 0 ||
       materialFilters.value.length > 0 ||
       qualityRange.value[0] !== 0 ||
-      qualityRange.value[1] !== 1000,
+      qualityRange.value[1] !== 1000 ||
+      dateRange.value[0] !== null ||
+      dateRange.value[1] !== null,
   )
 
   // ── Load autocomplete values from DuckDB ───────────────────────
@@ -69,6 +77,24 @@ export const useFiltersStore = defineStore('filters', () => {
       acMaterial.value = al.applyToList('material',  mats.map((r) => r.val))
     } catch (err) {
       console.warn('[filters] autocomplete load failed:', err.message)
+    }
+
+    // Discover date/timestamp column and its range
+    try {
+      const schema = await db.describeTable('scans')
+      const dateCol = schema.find((r) =>
+        /^TIMESTAMP|^DATE/i.test(r.column_type),
+      )?.column_name ?? null
+      dateColumn.value = dateCol
+      if (dateCol && /^[a-z0-9_]+$/i.test(dateCol)) {
+        const [bounds] = await db.runQuery(
+          `SELECT MIN("${dateCol}")::VARCHAR AS mn, MAX("${dateCol}")::VARCHAR AS mx FROM scans`,
+        )
+        dateMin.value = bounds?.mn?.slice(0, 10) ?? null
+        dateMax.value = bounds?.mx?.slice(0, 10) ?? null
+      }
+    } catch (err) {
+      console.warn('[filters] date column detection failed:', err.message)
     }
   }
 
@@ -117,6 +143,13 @@ export const useFiltersStore = defineStore('filters', () => {
       parts.push(`c.quality >= ${qualityRange.value[0]} AND c.quality <= ${qualityRange.value[1]}`)
     }
 
+    if (hasScans && dateColumn.value && /^[a-z0-9_]+$/i.test(dateColumn.value)) {
+      const col = `s."${dateColumn.value}"::DATE`
+      const [from, to] = dateRange.value
+      if (from && /^\d{4}-\d{2}-\d{2}$/.test(from)) parts.push(`${col} >= DATE '${from}'`)
+      if (to   && /^\d{4}-\d{2}-\d{2}$/.test(to))   parts.push(`${col} <= DATE '${to}'`)
+    }
+
     return parts.length > 0 ? parts.join(' AND ') : '1=1'
   }
 
@@ -130,6 +163,7 @@ export const useFiltersStore = defineStore('filters', () => {
     depositFilters.value = []
     materialFilters.value = []
     qualityRange.value = [0, 1000]
+    dateRange.value = [null, null]
   }
 
   // A single string that changes whenever any filter changes — used by panels as watch target
@@ -138,6 +172,7 @@ export const useFiltersStore = defineStore('filters', () => {
     depositFilters.value.map((m) => (m.negated ? '!' : '') + m.value).join('\x00'),
     materialFilters.value.map((m) => (m.negated ? '!' : '') + m.value).join('\x00'),
     qualityRange.value.join('-'),
+    dateRange.value.join('~'),
   ].join('|'))
 
   return {
@@ -145,6 +180,10 @@ export const useFiltersStore = defineStore('filters', () => {
     depositFilters,
     materialFilters,
     qualityRange,
+    dateRange,
+    dateColumn,
+    dateMin,
+    dateMax,
     acLocation,
     acDeposit,
     acMaterial,

@@ -66,6 +66,39 @@
         </div>
       </FilterGroup>
 
+      <!-- Date range (only shown when a date column is detected) -->
+      <FilterGroup v-if="filters.dateColumn" label="Date Range">
+        <div class="date-inputs">
+          <div class="date-input-group">
+            <label for="date-from">From</label>
+            <input
+              id="date-from"
+              type="date"
+              :value="filters.dateRange[0] ?? ''"
+              :min="filters.dateMin ?? undefined"
+              :max="filters.dateRange[1] ?? filters.dateMax ?? undefined"
+              @change="setDateFrom($event.target.value || null)"
+              class="date-input"
+            />
+          </div>
+          <div class="date-input-group">
+            <label for="date-to">To</label>
+            <input
+              id="date-to"
+              type="date"
+              :value="filters.dateRange[1] ?? ''"
+              :min="filters.dateRange[0] ?? filters.dateMin ?? undefined"
+              :max="filters.dateMax ?? undefined"
+              @change="setDateTo($event.target.value || null)"
+              class="date-input"
+            />
+          </div>
+        </div>
+        <p v-if="filters.dateMin" class="date-range-hint">
+          {{ filters.dateMin }} → {{ filters.dateMax }}
+        </p>
+      </FilterGroup>
+
       <div class="sidebar-actions">
         <button class="btn-primary" @click="apply">Apply</button>
         <button class="btn-ghost" @click="clear">Clear</button>
@@ -92,6 +125,13 @@ function setQualityMin(v) {
 function setQualityMax(v) {
   const newMax = Math.max(Number(v), filters.qualityRange[0])
   filters.$patch({ qualityRange: [filters.qualityRange[0], newMax] })
+}
+
+function setDateFrom(v) {
+  filters.$patch({ dateRange: [v, filters.dateRange[1]] })
+}
+function setDateTo(v) {
+  filters.$patch({ dateRange: [filters.dateRange[0], v] })
 }
 
 function apply() {
@@ -145,5 +185,57 @@ function clear() {
   border-color: #5470c6;
   background: rgba(255, 255, 255, 0.1);
   box-shadow: 0 0 0 2px rgba(84, 112, 198, 0.2);
+}
+
+.date-inputs {
+  display: flex;
+  gap: 8px;
+}
+
+.date-input-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.date-input-group label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.date-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #c9d1d9;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+  width: 100%;
+  transition: all 200ms ease;
+  color-scheme: dark;
+}
+
+.date-input:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: #5470c6;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 0 2px rgba(84, 112, 198, 0.2);
+}
+
+.date-range-hint {
+  font-size: 11px;
+  color: var(--text-subtle);
+  margin-top: 4px;
+  text-align: center;
 }
 </style>
