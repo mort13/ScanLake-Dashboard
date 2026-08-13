@@ -183,16 +183,6 @@ FROM scans s
 LIMIT 2000`
 
 onMounted(() => {
-  sqlEditor = new EditorView({
-    doc: DEFAULT_SQL,
-    extensions: [basicSetup, sql(), oneDark],
-    parent: sqlEditorEl.value,
-  })
-  chartSqlEditor = new EditorView({
-    doc: DEFAULT_CHART_SQL,
-    extensions: [basicSetup, sql(), oneDark],
-    parent: chartSqlEditorEl.value,
-  })
   if (db.isReady) loadSchema()
 })
 
@@ -358,5 +348,23 @@ async function loadSchema() {
 }
 
 watch(() => db.isReady, (ready) => { if (ready) loadSchema() })
-watch(() => props.open, (open) => { if (open && db.isReady && activeTab.value === 'schema') loadSchema() })
+watch(() => props.open, async (open) => {
+  if (!open) return
+  await nextTick()
+  if (!sqlEditor) {
+    sqlEditor = new EditorView({
+      doc: DEFAULT_SQL,
+      extensions: [basicSetup, sql(), oneDark],
+      parent: sqlEditorEl.value,
+    })
+  }
+  if (!chartSqlEditor) {
+    chartSqlEditor = new EditorView({
+      doc: DEFAULT_CHART_SQL,
+      extensions: [basicSetup, sql(), oneDark],
+      parent: chartSqlEditorEl.value,
+    })
+  }
+  if (db.isReady && activeTab.value === 'schema') loadSchema()
+})
 </script>

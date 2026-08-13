@@ -1,5 +1,5 @@
 name = "scanlake-dashboard"
-pages_build_output_dir = "dist"
+pages_build_output_dir = ""
 compatibility_date = "2025-01-01"
 
 # GATEWAY_API_KEY must be set as a secret — never committed to source.

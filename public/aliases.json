@@ -3,14 +3,14 @@
 
   "deposit": [
     { "display": "Example Deposit", "values": ["ExampleRaw1", "ExampleRaw2"] },
-    { "display": "Aluminium", "values": ["aluminum", "aluminium"] },
+    { "display": "Aluminium", "values": ["aluminum", "aluminium","Aluminum", "Aluminium"] },
     { "display": "Agricium", "values": ["agricium"] },
     { "display": "Aphorite", "values": ["aphorite"] },
     { "display": "Aslarite", "values": ["aslarite"] },
     { "display": "Beryl", "values": ["beryl"] },
     { "display": "Bexalite", "values": ["bexalite"] },
     { "display": "Borase", "values": ["borase"] },
-    { "display": "Corundum", "values": ["corundum", "corunum"] },
+    { "display": "Corundum", "values": ["corundum", "corunum","Corundum", "Corunum"] },
     { "display": "Copper", "values": ["copper"] },
     { "display": "Dolivine", "values": ["dolivine"] },
     { "display": "Feynmaline", "values": ["feynmaline"] },
@@ -70,6 +70,6 @@
   ],
 
   "location": [
-    { "display": "Example Location", "values": ["ExampleRaw1", "ExampleRaw2"] }
+    { "display": "Glaciem Ring", "values": ["Glacium Ring", "glacium ring"] }
   ]
 }
