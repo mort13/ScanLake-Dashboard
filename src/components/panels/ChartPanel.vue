@@ -17,6 +17,7 @@ import { useDbStore } from '@/stores/db'
 import { useFiltersStore } from '@/stores/filters'
 import { useAliasesStore } from '@/stores/aliases'
 import { getBuiltinSQL } from '@/lib/queries'
+import { rowsToCsv, downloadCsv } from '@/lib/csv'
 
 const props = defineProps({
   panel: { type: Object, required: true },
@@ -29,6 +30,7 @@ const aliases = useAliasesStore()
 const plotEl = ref(null)
 const loading = ref(true)
 const queryError = ref(null)
+const lastRows = ref([])
 let plotted = false
 
 async function refresh() {
@@ -48,6 +50,7 @@ async function refresh() {
     if (!sql) throw new Error('No SQL defined for panel')
 
     const rows = await db.runQuery(sql)
+    lastRows.value = rows
     loading.value = false   // must be false so v-else mounts plotEl before renderPlot
     await nextTick()
     renderPlot(rows)
@@ -166,8 +169,12 @@ function hoverText(row, chart) {
 }
 
 const registerSaveHandler = inject('registerSaveHandler', null)
+const registerCsvHandler  = inject('registerCsvHandler',  null)
 
 onMounted(() => {
+  registerCsvHandler?.((title) => {
+    downloadCsv(rowsToCsv(lastRows.value), `${(title || 'panel').replace(/[^a-z0-9]/gi, '-').toLowerCase()}.csv`)
+  })
   registerSaveHandler?.((width, height, title) => {
     if (!plotEl.value) return Promise.resolve()
     return Plotly.toImage(plotEl.value, { format: 'png', width, height }).then((url) => {

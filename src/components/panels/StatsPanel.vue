@@ -15,6 +15,7 @@
 import { ref, watch, onMounted, inject } from 'vue'
 import { useDbStore } from '@/stores/db'
 import { getBuiltinSQL } from '@/lib/queries'
+import { rowsToCsv, downloadCsv } from '@/lib/csv'
 
 const props = defineProps({
   panel: { type: Object, required: true },
@@ -24,6 +25,7 @@ const db = useDbStore()
 const loading = ref(true)
 const error = ref(null)
 const chips = ref([])
+const lastRows = ref([])
 
 const LABELS = {
   total_scans: 'Total Scans',
@@ -43,6 +45,7 @@ async function refresh() {
   try {
     const sql = getBuiltinSQL('db_stats', null)
     const rows = await db.runQuery(sql)
+    lastRows.value = rows
     if (rows.length > 0) {
       chips.value = Object.entries(rows[0]).map(([key, val]) => ({
         label: LABELS[key] ?? key,
@@ -57,6 +60,7 @@ async function refresh() {
 }
 
 const registerSaveHandler = inject('registerSaveHandler', null)
+const registerCsvHandler  = inject('registerCsvHandler',  null)
 
 function drawStatsCanvas(width, height, title) {
   const canvas = document.createElement('canvas')
@@ -112,6 +116,9 @@ function drawStatsCanvas(width, height, title) {
 }
 
 onMounted(() => {
+  registerCsvHandler?.((title) => {
+    downloadCsv(rowsToCsv(lastRows.value), `${(title || 'stats').replace(/[^a-z0-9]/gi, '-').toLowerCase()}.csv`)
+  })
   registerSaveHandler?.((width, height, title) => {
     const canvas = drawStatsCanvas(width, height, title)
     const url = canvas.toDataURL('image/png')

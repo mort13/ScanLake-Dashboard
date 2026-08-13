@@ -15,6 +15,19 @@
           </svg>
         </button>
         <button
+          v-if="csvHandler"
+          class="panel-btn panel-btn--action"
+          title="Export as CSV"
+          @click="handleCsvExport"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <line x1="3" y1="9" x2="21" y2="9"/>
+            <line x1="3" y1="15" x2="21" y2="15"/>
+            <line x1="9" y1="3" x2="9" y2="21"/>
+          </svg>
+        </button>
+        <button
           class="panel-btn panel-btn--action"
           title="Save as image"
           @click="saveOpen = true"
@@ -90,10 +103,20 @@ const resolvedSQL = computed(() => {
 const saveHandler = ref(null)
 provide('registerSaveHandler', (fn) => { saveHandler.value = fn })
 
+// CSV handler registered by the child panel component via inject
+const csvHandler = ref(null)
+provide('registerCsvHandler', (fn) => { csvHandler.value = fn })
+
 async function handleDownload({ width, height }) {
   saveOpen.value = false
   if (saveHandler.value) {
     await saveHandler.value(width, height, props.panel.title)
+  }
+}
+
+function handleCsvExport() {
+  if (csvHandler.value) {
+    csvHandler.value(props.panel.title)
   }
 }
 </script>
