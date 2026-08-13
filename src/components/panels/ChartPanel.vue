@@ -11,7 +11,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount, nextTick, inject } from 'vue'
 import Plotly from 'plotly.js-dist-min'
 import { useDbStore } from '@/stores/db'
 import { useFiltersStore } from '@/stores/filters'
@@ -165,7 +165,18 @@ function hoverText(row, chart) {
     .join('<br>')
 }
 
+const registerSaveHandler = inject('registerSaveHandler', null)
+
 onMounted(() => {
+  registerSaveHandler?.((width, height, title) => {
+    if (!plotEl.value) return Promise.resolve()
+    return Plotly.toImage(plotEl.value, { format: 'png', width, height }).then((url) => {
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${(title || 'panel').replace(/[^a-z0-9]/gi, '-').toLowerCase()}.png`
+      a.click()
+    })
+  })
   if (db.isReady) refresh()
 })
 

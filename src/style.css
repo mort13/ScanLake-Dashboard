@@ -351,7 +351,7 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
   text-overflow: ellipsis;
 }
 
-.panel-actions { display: flex; gap: 4px; }
+.panel-actions { display: flex; gap: 4px; align-items: center; }
 .panel-btn {
   background: none;
   border: none;
@@ -363,6 +363,14 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
   transition: color 0.15s;
 }
 .panel-btn:hover { color: var(--danger); }
+.panel-btn.panel-btn--action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  padding: 2px 4px;
+}
+.panel-btn.panel-btn--action:hover { color: var(--accent-hover); }
 
 .panel-body {
   flex: 1;
@@ -478,6 +486,93 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 }
 
 .save-dialog { max-width: 420px; }
+.query-view-modal { max-width: 700px; }
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* ── Save-as-image modal body ──────────────────────────────────── */
+.save-image-body { gap: 14px; }
+
+.size-presets {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.preset-btn {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.preset-btn:hover { background: var(--bg-hover); color: var(--text); }
+.preset-btn.active {
+  background: var(--accent-muted);
+  border-color: var(--accent);
+  color: var(--accent-hover);
+}
+
+.size-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.size-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  flex: 1;
+}
+.size-label input {
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  width: 100%;
+}
+
+.size-sep {
+  font-size: 16px;
+  color: var(--text-muted);
+  padding-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.size-hint {
+  font-size: 11px;
+  color: var(--text-subtle);
+  text-align: right;
+}
+
+/* ── Query viewer modal ────────────────────────────────────────── */
+.query-display {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  overflow: auto;
+  max-height: 420px;
+  font-family: ui-monospace, Consolas, 'Cascadia Code', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre;
+}
 
 .modal-header {
   display: flex;
