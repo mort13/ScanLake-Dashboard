@@ -144,7 +144,8 @@ export const useFiltersStore = defineStore('filters', () => {
     }
 
     if (hasScans && dateColumn.value && /^[a-z0-9_]+$/i.test(dateColumn.value)) {
-      const col = `s."${dateColumn.value}"::DATE`
+      // Via TIMESTAMP: DuckDB WASM has no ICU, so TIMESTAMPTZ can't cast to DATE directly (UTC date)
+      const col = `s."${dateColumn.value}"::TIMESTAMP::DATE`
       const [from, to] = dateRange.value
       if (from && /^\d{4}-\d{2}-\d{2}$/.test(from)) parts.push(`${col} >= DATE '${from}'`)
       if (to   && /^\d{4}-\d{2}-\d{2}$/.test(to))   parts.push(`${col} <= DATE '${to}'`)

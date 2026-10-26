@@ -68,11 +68,13 @@ export const useAliasesStore = defineStore('aliases', () => {
   /**
    * Expand a display name (or raw value) to all raw values it covers.
    * Used so filter WHERE clauses match every underlying raw value.
+   * The display name itself is included: the Refinery normalises names, so
+   * the consolidated data mostly holds the display spelling already.
    */
   function expandAlias(dimension, nameOrValue) {
     const list = groups.value[dimension] ?? []
     const group = list.find(g => g.display === nameOrValue)
-    return group ? group.values : [nameOrValue]
+    return group ? [...new Set([group.display, ...group.values])] : [nameOrValue]
   }
 
   /**

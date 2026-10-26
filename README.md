@@ -4,7 +4,7 @@ A browser-based analytics dashboard for ScanLake scan data. Parquet files are qu
 
 ## How it works
 
-On load, the app fetches the list of available Parquet files from `/api/files` and registers them as views inside DuckDB WASM. All subsequent queries run entirely in the browser — no backend is needed for query execution.
+On load, the app fetches the consolidated Parquet files that ScanLake Refinery publishes to the `scanlake-derived` bucket (`/api/derived/consolidated/{scans,compositions,confidences}.parquet`) and registers each as a view of the same name inside DuckDB WASM. The Refinery already deduplicates captures, unifies the schema and normalises names, so the dashboard does no merging of its own. All subsequent queries run entirely in the browser — no backend is needed for query execution.
 
 The Cloudflare Pages Function at `functions/api/[[path]].js` forwards requests to `gateway.scanlake.rocks`, injecting the `GATEWAY_API_KEY` secret server-side so it is never exposed to the browser.
 
