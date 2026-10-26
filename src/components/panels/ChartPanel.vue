@@ -187,8 +187,9 @@ onMounted(() => {
   if (db.isReady) refresh()
 })
 
-// Refresh when DB becomes ready
+// Refresh when DB becomes ready or new data was loaded in the background
 watch(() => db.isReady, (ready) => { if (ready) refresh() })
+watch(() => db.dataVersion, () => refresh())
 
 // Refresh when filters change (only if panel is filterable)
 watch(

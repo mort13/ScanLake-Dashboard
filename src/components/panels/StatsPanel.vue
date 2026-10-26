@@ -130,4 +130,5 @@ onMounted(() => {
   if (db.isReady) refresh()
 })
 watch(() => db.isReady, (ready) => { if (ready) refresh() })
+watch(() => db.dataVersion, () => refresh())
 </script>

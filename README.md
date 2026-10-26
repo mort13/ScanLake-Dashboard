@@ -4,7 +4,11 @@ A browser-based analytics dashboard for ScanLake scan data. Parquet files are qu
 
 ## How it works
 
-On load, the app fetches the consolidated Parquet files that ScanLake Refinery publishes to the `scanlake-derived` bucket (`/api/derived/consolidated/{scans,compositions,confidences}.parquet`) and registers each as a view of the same name inside DuckDB WASM. The Refinery already deduplicates captures, unifies the schema and normalises names, so the dashboard does no merging of its own. All subsequent queries run entirely in the browser — no backend is needed for query execution.
+On load, the app fetches the consolidated Parquet files that ScanLake Refinery publishes to the `scanlake-derived` bucket (`/api/derived/consolidated/{scans,compositions,confidences}.parquet`) and registers each as a view of the same name inside DuckDB WASM. The Refinery already deduplicates captures, unifies the schema and normalises names, so the dashboard does no merging of its own.
+
+The files are cached in the browser (Cache Storage, `scanlake-parquet`). Each load first reads the bucket's `manifest.json` and looks up every file by the sha256 listed there, so a reload downloads only the files the Refinery has changed since, and older versions are removed from the cache. If the manifest can't be read, the files are downloaded without caching.
+
+An open tab checks the manifest again every 15 minutes. When a file's hash has changed, it downloads only that file, points the view at it and re-runs the panels and filter suggestions. If the check fails, the loaded data stays in place. All subsequent queries run entirely in the browser — no backend is needed for query execution.
 
 The Cloudflare Pages Function at `functions/api/[[path]].js` forwards requests to `gateway.scanlake.rocks`, injecting the `GATEWAY_API_KEY` secret server-side so it is never exposed to the browser.
 

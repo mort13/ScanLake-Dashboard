@@ -54,10 +54,11 @@ onMounted(async () => {
   await db.init()
 })
 
-// Load autocomplete data once DB is ready
+// Load autocomplete data once DB is ready, and again after a background refresh
 watch(() => db.isReady, (ready) => {
   if (ready) filters.loadAutocomplete()
 })
+watch(() => db.dataVersion, () => filters.loadAutocomplete())
 
 function onFiltersApply() {
   // Panels watch the filter store reactively — no explicit trigger needed
