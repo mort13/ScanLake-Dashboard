@@ -5,6 +5,17 @@
       <span class="header-title">ScanLake</span>
     </div>
 
+    <nav class="header-tabs" role="tablist">
+      <button
+        v-for="tab in TABS"
+        :key="tab.id"
+        class="header-tab"
+        :class="{ active: view === tab.id }"
+        role="tab"
+        @click="emit('update:view', tab.id)"
+      >{{ tab.label }}</button>
+    </nav>
+
     <div class="header-status">
       <template v-if="db.status === 'initializing' || db.status === 'loading'">
         <span class="spinner sm" />
@@ -21,7 +32,7 @@
       </template>
     </div>
 
-    <nav class="header-actions">
+    <nav v-if="view === 'dashboard'" class="header-actions">
       <button class="btn-secondary" @click="emit('openQuery')">
         ✎ Query Editor
       </button>
@@ -45,7 +56,17 @@ import { useDashboardStore } from '@/stores/dashboard'
 
 const db = useDbStore()
 const dashboard = useDashboardStore()
-const emit = defineEmits(['openQuery', 'addPanel'])
+const emit = defineEmits(['openQuery', 'addPanel', 'update:view'])
+
+defineProps({
+  view: { type: String, default: 'dashboard' },
+})
+
+const TABS = [
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'results', label: 'Results' },
+  { id: 'highscores', label: 'Highscores' },
+]
 
 async function onImport(e) {
   const file = e.target.files?.[0]
