@@ -30,8 +30,11 @@ export const useResultsStore = defineStore('results', () => {
     return unused
   }
 
-  /** WHERE fragment (no leading WHERE) for a table with the given columns. */
-  function buildWhere(columns) {
+  /**
+   * WHERE fragment (no leading WHERE) for a table with the given columns.
+   * `skip` lists filters to leave out: 'material'.
+   */
+  function buildWhere(columns, skip = []) {
     const al = useAliasesStore()
     const parts = []
 
@@ -54,7 +57,7 @@ export const useResultsStore = defineStore('results', () => {
       if (neg.length) parts.push(`COALESCE("${column}", '') NOT IN (${neg.join(', ')})`)
     }
     addNamed('deposit', 'deposit', depositFilters.value)
-    addNamed('material', 'material', materialFilters.value)
+    if (!skip.includes('material')) addNamed('material', 'material', materialFilters.value)
 
     return parts.length ? parts.join(' AND ') : '1=1'
   }

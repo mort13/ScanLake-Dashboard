@@ -17,6 +17,25 @@ export function selectList(schema) {
     .join(', ')
 }
 
+// Bookkeeping columns, in the order they are shown after the real data:
+// scan amounts, then last/first scan, then total mass
+const META_GROUPS = [
+  /(^|_)scans$|^rocks$/,
+  /_scan_at$/,
+  /(^|_)total_(material_)?mass$/,
+]
+
+/** Moves the metadata columns (scan counts, scan dates, total mass) to the end; other columns keep their order. */
+export function metaLast(schema) {
+  const rank = (c) => {
+    const i = META_GROUPS.findIndex((re) => re.test(c.column_name))
+    return i < 0 ? -1 : i
+  }
+  const data = schema.filter((c) => rank(c) < 0)
+  const meta = schema.filter((c) => rank(c) >= 0).sort((a, b) => rank(a) - rank(b))
+  return [...data, ...meta]
+}
+
 /** "deposit_materials_by_region" → "Deposit materials by region" */
 export function prettyName(name) {
   const s = name.replace(/_/g, ' ')

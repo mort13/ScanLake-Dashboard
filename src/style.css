@@ -848,3 +848,29 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 .board-who, .board-value { display: flex; flex-direction: column; min-width: 0; }
 .board-value { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
 .board-who small, .board-value small { font-size: 11px; font-weight: 400; color: var(--text-subtle); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Results tab: region cards ─────────────────────────────────── */
+.region-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; align-items: start; }
+.region-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+}
+.region-head h3 { font-size: 14px; font-weight: 600; }
+.region-head p { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+.region-materials { list-style: none; max-height: 240px; overflow-y: auto; }
+.region-materials li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 56px 46px;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+.mat-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mat-bar { height: 5px; border-radius: 3px; background: var(--bg-elevated); overflow: hidden; }
+.mat-bar > span { display: block; height: 100%; background: var(--accent); }
+.mat-share { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-muted); }
+.region-foot { margin-top: 6px; font-size: 11px; color: var(--text-subtle); }

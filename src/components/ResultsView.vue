@@ -62,6 +62,22 @@
       No result tables were published yet.
     </div>
     <div v-else-if="rows.length === 0 && !loading" class="no-results">No rows match the filters.</div>
+    <div v-else-if="cardMode" class="region-grid">
+      <section v-for="card in cards" :key="card.key" class="region-card">
+        <header class="region-head">
+          <h3>{{ card.region ?? card.gravity_well }}</h3>
+          <p>{{ card.region ? `${card.system} · ${card.gravity_well}` : card.system }}</p>
+        </header>
+        <ol class="region-materials">
+          <li v-for="m in card.materials" :key="m.material" :title="`Present in ${formatCell(m.presence)}% of scans`">
+            <span class="mat-name">{{ m.material }}</span>
+            <span class="mat-bar"><span :style="{ width: Math.min(100, m.share) + '%' }" /></span>
+            <span class="mat-share">{{ formatCell(m.share) }}%</span>
+          </li>
+        </ol>
+        <footer class="region-foot">{{ card.scans.toLocaleString() }} scans · {{ card.materials.length }} materials</footer>
+      </section>
+    </div>
     <div v-else class="table-scroll results-table-wrap">
       <table class="result-table">
         <thead>
@@ -89,7 +105,7 @@
       </table>
     </div>
 
-    <div v-if="pageCount > 1" class="results-pager">
+    <div v-if="!cardMode && pageCount > 1" class="results-pager">
       <button class="btn-ghost" :disabled="page === 0" @click="page--">‹ Prev</button>
       <span>Page {{ page + 1 }} / {{ pageCount }}</span>
       <button class="btn-ghost" :disabled="page >= pageCount - 1" @click="page++">Next ›</button>
@@ -102,7 +118,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useDbStore } from '@/stores/db'
 import { useFiltersStore } from '@/stores/filters'
 import { useResultsStore } from '@/stores/results'
-import { selectList, prettyName, formatCell } from '@/lib/results'
+import { selectList, metaLast, prettyName, formatCell } from '@/lib/results'
 import { rowsToCsv, downloadCsv } from '@/lib/csv'
 import FilterGroup from '@/components/FilterGroup.vue'
 import TagInput from '@/components/TagInput.vue'
@@ -119,6 +135,11 @@ const total = ref(0)
 const page = ref(0)
 const loading = ref(false)
 const error = ref(null)
+const cards = ref([]) // one per location, in card mode
+
+// This table is shown as one card per region instead of a grid
+const CARD_TABLE = 'deposit_materials_by_region'
+const cardMode = computed(() => results.active === CARD_TABLE)
 
 // Highscores have their own tab
 const tables = computed(() => db.resultTables.filter((t) => t !== 'highscores'))
@@ -145,8 +166,13 @@ async function load() {
   loading.value = true
   error.value = null
   try {
-    schema.value = await db.describeTable(`results_${name}`)
+    schema.value = metaLast(await db.describeTable(`results_${name}`))
     const where = results.buildWhere(columns.value)
+    if (name === CARD_TABLE) {
+      await loadCards(where)
+      return
+    }
+    cards.value = []
     const from = `FROM "results_${name}" WHERE ${where}`
     const [count] = await db.runQuery(`SELECT count(*) AS n ${from}`)
     total.value = count.n
@@ -160,6 +186,54 @@ async function load() {
   } finally {
     loading.value = false
   }
+}
+
+/**
+ * Groups the by-region rows into one card per location. A material's
+ * concentration is its average share over all scans at the location: each
+ * deposit's avg_share_pct weighted by that deposit's scans, divided by the
+ * scans of every deposit there (so deposits without the material count as 0).
+ * The material filter only selects what is listed; it doesn't change the maths.
+ */
+async function loadCards(where) {
+  const table = `"results_${CARD_TABLE}"`
+  const whereAll = results.buildWhere(columns.value, ['material'])
+  const loc = 'system, gravity_well, region'
+  const [data, denoms] = await Promise.all([
+    db.runQuery(
+      `SELECT ${loc}, material, sum(avg_share_pct * composition_scans) AS weighted,
+              sum(material_scans) AS material_scans
+       FROM ${table} WHERE ${where} GROUP BY ${loc}, material`,
+    ),
+    db.runQuery(
+      `SELECT ${loc}, sum(scans) AS scans, max(location_scans) AS location_scans FROM (
+         SELECT ${loc}, deposit, max(composition_scans) AS scans, max(location_scans) AS location_scans
+         FROM ${table} WHERE ${whereAll} GROUP BY ${loc}, deposit
+       ) GROUP BY ${loc}`,
+    ),
+  ])
+  const key = (r) => [r.system, r.gravity_well, r.region].join('|')
+  const byLoc = new Map(
+    denoms.map((d) => [key(d), { ...d, key: key(d), scans: Number(d.scans), materials: [] }]),
+  )
+  for (const r of data) {
+    const card = byLoc.get(key(r))
+    if (!card || !card.scans) continue
+    card.materials.push({
+      material: r.material,
+      share: Math.round((Number(r.weighted) / card.scans) * 100) / 100,
+      presence: Math.round((Number(r.material_scans) / card.scans) * 10000) / 100,
+    })
+  }
+  for (const c of byLoc.values()) {
+    c.materials.sort((a, b) => b.share - a.share || a.material.localeCompare(b.material))
+    c.scans = Number(c.location_scans ?? c.scans)
+  }
+  cards.value = [...byLoc.values()]
+    .filter((c) => c.materials.length)
+    .sort((a, b) => b.scans - a.scans || (a.region ?? a.gravity_well).localeCompare(b.region ?? b.gravity_well))
+  total.value = cards.value.length
+  rows.value = cards.value // keeps the empty-state check working
 }
 
 async function exportCsv() {
