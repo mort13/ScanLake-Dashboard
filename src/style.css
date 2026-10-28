@@ -850,16 +850,21 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 .board-who small, .board-value small { font-size: 11px; font-weight: 400; color: var(--text-subtle); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ── Results tab: region cards ─────────────────────────────────── */
-.region-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; align-items: start; }
+.region-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
 .region-card {
+  display: flex;
+  flex-direction: column;
+  height: 300px; /* same size for every card; the material list scrolls */
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 10px 12px;
+  cursor: pointer;
 }
+.region-card:hover, .region-card:focus-visible { border-color: var(--accent); outline: none; }
 .region-head h3 { font-size: 14px; font-weight: 600; }
 .region-head p { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
-.region-materials { list-style: none; max-height: 240px; overflow-y: auto; }
+.region-materials { list-style: none; flex: 1; min-height: 0; overflow-y: auto; }
 .region-materials li {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 56px 46px;
@@ -874,3 +879,65 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 .mat-bar > span { display: block; height: 100%; background: var(--accent); }
 .mat-share { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-muted); }
 .region-foot { margin-top: 6px; font-size: 11px; color: var(--text-subtle); }
+
+/* ── Location detail window ────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.6);
+}
+.loc-modal {
+  width: min(960px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px 20px 20px;
+}
+.loc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.loc-head h2 { font-size: 18px; font-weight: 600; }
+.loc-head p { font-size: 12px; color: var(--text-muted); }
+.loc-close { font-size: 20px; line-height: 1; }
+.loc-body { display: flex; flex-direction: column; gap: 14px; }
+.loc-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+.loc-stats > div {
+  display: flex; flex-direction: column;
+  padding: 8px 12px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+}
+.loc-stats strong { font-size: 18px; font-variant-numeric: tabular-nums; }
+.loc-stats span { font-size: 11px; color: var(--text-muted); }
+.loc-charts, .loc-lower { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.loc-chart h3 { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.loc-chart h3 small { font-weight: 400; color: var(--text-subtle); margin-left: 6px; }
+.loc-chart ul { list-style: none; }
+.loc-chart li {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) 96px;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 4px;
+  font-size: 12px;
+  border-radius: 4px;
+  transition: opacity 0.1s;
+}
+.loc-chart li.hi { background: var(--bg-elevated); }
+.loc-chart li.dim, .loc-table tr.dim { opacity: 0.3; }
+.loc-table tr.hi td { background: var(--bg-elevated); }
+.bar-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-track, .q-track { position: relative; height: 8px; border-radius: 4px; background: var(--bg-elevated); overflow: hidden; }
+.loc-chart li.hi .bar-track { background: var(--bg-surface); }
+.bar-track > span { display: block; height: 100%; background: var(--accent); }
+.bar-value { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-muted); white-space: nowrap; }
+.loc-chart li.hi .bar-value { color: var(--text); }
+.q-track { overflow: visible; }
+.q-range, .q-box, .q-median { position: absolute; top: 0; height: 100%; }
+.q-range { top: 3px; height: 2px; background: var(--text-subtle); }
+.q-box { background: var(--accent); opacity: 0.8; border-radius: 2px; }
+.q-median { width: 2px; background: var(--text); transform: translateX(-1px); }
+.loc-table { width: 100%; }
+.loc-total td { font-weight: 600; border-top: 1px solid var(--border); }
+.loc-hint { font-size: 11px; color: var(--text-subtle); margin-top: 6px; }

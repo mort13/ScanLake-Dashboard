@@ -22,7 +22,7 @@ export function selectList(schema) {
 const META_GROUPS = [
   /(^|_)scans$|^rocks$/,
   /_scan_at$/,
-  /(^|_)total_(material_)?mass$/,
+  /(^|_)total_(material_)?(mass|scu)$/,
 ]
 
 /** Moves the metadata columns (scan counts, scan dates, total mass) to the end; other columns keep their order. */

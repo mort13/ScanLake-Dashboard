@@ -63,7 +63,16 @@
     </div>
     <div v-else-if="rows.length === 0 && !loading" class="no-results">No rows match the filters.</div>
     <div v-else-if="cardMode" class="region-grid">
-      <section v-for="card in cards" :key="card.key" class="region-card">
+      <section
+        v-for="card in cards"
+        :key="card.key"
+        class="region-card"
+        role="button"
+        tabindex="0"
+        title="Show details"
+        @click="detail = card"
+        @keydown.enter="detail = card"
+      >
         <header class="region-head">
           <h3>{{ card.region ?? card.gravity_well }}</h3>
           <p>{{ card.region ? `${card.system} · ${card.gravity_well}` : card.system }}</p>
@@ -105,6 +114,8 @@
       </table>
     </div>
 
+    <LocationDetail v-if="detail && cardMode" :location="detail" @close="detail = null" />
+
     <div v-if="!cardMode && pageCount > 1" class="results-pager">
       <button class="btn-ghost" :disabled="page === 0" @click="page--">‹ Prev</button>
       <span>Page {{ page + 1 }} / {{ pageCount }}</span>
@@ -122,6 +133,7 @@ import { selectList, metaLast, prettyName, formatCell } from '@/lib/results'
 import { rowsToCsv, downloadCsv } from '@/lib/csv'
 import FilterGroup from '@/components/FilterGroup.vue'
 import TagInput from '@/components/TagInput.vue'
+import LocationDetail from '@/components/LocationDetail.vue'
 
 const PAGE_SIZE = 100
 
@@ -136,6 +148,7 @@ const page = ref(0)
 const loading = ref(false)
 const error = ref(null)
 const cards = ref([]) // one per location, in card mode
+const detail = ref(null) // the card whose details are open
 
 // This table is shown as one card per region instead of a grid
 const CARD_TABLE = 'deposit_materials_by_region'
