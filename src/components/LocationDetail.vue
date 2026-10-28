@@ -39,6 +39,24 @@
           </section>
 
           <section class="loc-chart">
+            <h3>Materials <small>average share of a rock here</small></h3>
+            <ul @mouseleave="hover = null">
+              <li
+                v-for="m in materials"
+                :key="m.material"
+                :class="matClass(m)"
+                @mouseenter="hover = { type: 'material', name: m.material }"
+              >
+                <span class="bar-name">{{ m.material }}</span>
+                <span class="bar-track"><span :style="{ width: (m.share / maxMaterial) * 100 + '%' }" /></span>
+                <span class="bar-value">{{ matNote(m) ?? formatCell(m.share) + '%' }}</span>
+              </li>
+            </ul>
+          </section>
+        </div>
+
+        <div class="loc-lower">
+          <section class="loc-chart">
             <h3>Time between clusters <small>average, per deposit</small></h3>
             <ul @mouseleave="hover = null">
               <li
@@ -56,36 +74,6 @@
             <p v-if="gapRows.length === 0" class="loc-hint">Not enough consecutive clusters here.</p>
             <p v-else class="loc-hint">Time between consecutive clusters of the deposit; hover a bar for the median.</p>
           </section>
-        </div>
-
-        <div class="loc-lower">
-          <section class="loc-chart">
-            <h3>Size and frequency</h3>
-            <table class="result-table loc-table">
-              <thead>
-                <tr><th>deposit</th><th>frequency</th><th>scans</th><th>avg size (SCU)</th></tr>
-              </thead>
-              <tbody>
-                <tr v-for="d in deposits" :key="d.deposit" :class="depClass(d)">
-                  <td>{{ d.deposit }}</td>
-                  <td class="num">{{ formatCell(d.share) }}%</td>
-                  <td class="num">{{ d.scans.toLocaleString() }}</td>
-                  <td class="num">{{ formatCell(d.scu / d.scans) }}</td>
-                </tr>
-                <tr class="loc-total">
-                  <td>All deposits</td>
-                  <td class="num">{{ formatCell(summary.share) }}%</td>
-                  <td class="num">{{ summary.depositScans.toLocaleString() }}</td>
-                  <td class="num">{{ formatCell(summary.avgScu) }}</td>
-                </tr>
-              </tbody>
-            </table>
-            <p class="loc-hint">
-              Frequency is the share of all scans here that were this deposit. Size is the average SCU of ore
-              per rock.
-            </p>
-          </section>
-
           <section class="loc-chart">
             <h3>
               Quality
@@ -180,6 +168,7 @@ const filterNote = computed(() => {
 })
 
 const maxDeposit = computed(() => Math.max(1, ...deposits.value.map((d) => d.share)))
+const maxMaterial = computed(() => Math.max(1, ...materials.value.map((m) => m.share)))
 const maxGap = computed(() => Math.max(1, ...gaps.value.map((g) => g.avg)))
 const qualityRows = computed(() => materials.value.filter((m) => m.bands))
 const depByName = computed(() => new Map(deposits.value.map((d) => [d.deposit, d])))
@@ -207,6 +196,12 @@ function depNote(d) {
   if (h?.type !== 'material') return null
   const s = d.materials.get(h.name)
   return s == null ? null : `${formatCell(s)}% ${h.name}`
+}
+function matNote(m) {
+  const h = hover.value
+  if (h?.type !== 'deposit') return null
+  const s = depByName.value.get(h.name)?.materials.get(m.material)
+  return s == null ? null : `${formatCell(s)}% here`
 }
 // Hovering a deposit switches the quality strips to that deposit's own distribution
 function bandsOf(m) {
