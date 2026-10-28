@@ -928,16 +928,22 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 .loc-chart li.dim, .loc-table tr.dim { opacity: 0.3; }
 .loc-table tr.hi td { background: var(--bg-elevated); }
 .bar-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bar-track, .q-track { position: relative; height: 8px; border-radius: 4px; background: var(--bg-elevated); overflow: hidden; }
+.bar-track { position: relative; height: 8px; border-radius: 4px; background: var(--bg-elevated); overflow: hidden; }
 .loc-chart li.hi .bar-track { background: var(--bg-surface); }
 .bar-track > span { display: block; height: 100%; background: var(--accent); }
 .bar-value { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-muted); white-space: nowrap; }
 .loc-chart li.hi .bar-value { color: var(--text); }
-.q-track { overflow: visible; }
-.q-range, .q-box, .q-median { position: absolute; top: 0; height: 100%; }
-.q-range { top: 3px; height: 2px; background: var(--text-subtle); }
-.q-box { background: var(--accent); opacity: 0.8; border-radius: 2px; }
-.q-median { width: 2px; background: var(--text); transform: translateX(-1px); }
+.q-bands { display: flex; gap: 2px; height: 14px; }
+.q-band { flex: 1; border-radius: 2px; background: var(--accent); }
+.q-axis { display: flex; justify-content: space-between; margin-left: 122px; margin-right: 108px; font-size: 10px; color: var(--text-subtle); }
+.loc-chart li.loc-total { margin-top: 4px; border-top: 1px solid var(--border); border-radius: 0; font-weight: 600; }
 .loc-table { width: 100%; }
 .loc-total td { font-weight: 600; border-top: 1px solid var(--border); }
 .loc-hint { font-size: 11px; color: var(--text-subtle); margin-top: 6px; }
+.q-mode { display: inline-flex; gap: 2px; margin-left: 8px; vertical-align: middle; }
+.q-mode button {
+  padding: 1px 8px; font-size: 11px; font-weight: 400;
+  background: none; color: var(--text-muted);
+  border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
+}
+.q-mode button.active { color: #fff; background: var(--accent); border-color: var(--accent); }
