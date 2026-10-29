@@ -41,8 +41,8 @@
         role="button"
         tabindex="0"
         title="Show details"
-        @click="detail = card"
-        @keydown.enter="detail = card"
+        @click="openDetail(card)"
+        @keydown.enter="openDetail(card)"
       >
         <header class="region-head">
           <h3>{{ card.region ?? card.gravity_well }}</h3>
@@ -96,6 +96,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useDbStore } from '@/stores/db'
 import { useFiltersStore } from '@/stores/filters'
 import { useResultsStore } from '@/stores/results'
@@ -116,7 +117,7 @@ const page = ref(0)
 const loading = ref(false)
 const error = ref(null)
 const cards = ref([]) // one per location, in card mode
-const detail = ref(null) // the card whose details are open
+const { detail } = storeToRefs(results) // the card whose details are open (kept in the store)
 
 // This table is shown as one card per region instead of a grid
 const CARD_TABLE = 'deposit_materials_by_region'
@@ -218,6 +219,11 @@ async function loadCards(where) {
     .sort((a, b) => b.scans - a.scans || (a.region ?? a.gravity_well).localeCompare(b.region ?? b.gravity_well))
   total.value = cards.value.length
   rows.value = cards.value // keeps the empty-state check working
+}
+
+function openDetail(card) {
+  results.selection = []
+  detail.value = card
 }
 
 async function exportCsv() {

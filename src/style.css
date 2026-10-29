@@ -945,3 +945,8 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
   border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
 }
 .q-mode button.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+
+.loc-chart li { cursor: pointer; }
+.loc-chart li.loc-total { cursor: default; }
+.loc-chart li.pinned { box-shadow: inset 2px 0 0 var(--accent); font-weight: 600; }
+.loc-clear { padding: 0 6px; margin-left: 8px; font-size: 11px; }

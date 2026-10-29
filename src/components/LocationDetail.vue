@@ -24,7 +24,8 @@
           <div><strong>{{ formatCell(stats.instability) }}</strong><span>avg instability</span></div>
         </div>
         <p class="loc-hint loc-focus">
-          {{ hover ? `Scans ${hover.type === 'deposit' ? 'of the deposit' : 'containing'} ${hover.name}` : 'All scans here' }}
+          {{ focusText }}
+          <button v-if="selection.length" class="btn-ghost loc-clear" @click="selection = []">Clear selection</button>
         </p>
 
         <div class="loc-charts">
@@ -34,8 +35,9 @@
               <li
                 v-for="d in deposits"
                 :key="d.deposit"
-                :class="depClass(d)"
+                :class="[depClass(d), { pinned: isPinned('deposit', d.deposit) }]"
                 @mouseenter="hover = { type: 'deposit', name: d.deposit }"
+                @click="toggle('deposit', d.deposit)"
               >
                 <span class="bar-name">{{ d.deposit }}</span>
                 <span class="bar-track"><span :style="{ width: (d.share / maxDeposit) * 100 + '%' }" /></span>
@@ -45,32 +47,15 @@
           </section>
 
           <section class="loc-chart">
-            <h3>Materials <small>average share of a rock here</small></h3>
-            <ul @mouseleave="hover = null">
-              <li
-                v-for="m in materials"
-                :key="m.material"
-                :class="matClass(m)"
-                @mouseenter="hover = { type: 'material', name: m.material }"
-              >
-                <span class="bar-name">{{ m.material }}</span>
-                <span class="bar-track"><span :style="{ width: (m.share / maxMaterial) * 100 + '%' }" /></span>
-                <span class="bar-value">{{ matNote(m) ?? formatCell(m.share) + '%' }}</span>
-              </li>
-            </ul>
-          </section>
-        </div>
-
-        <div class="loc-lower">
-          <section class="loc-chart">
             <h3>Time between clusters <small>average, per deposit</small></h3>
             <ul @mouseleave="hover = null">
               <li
                 v-for="g in gapRows"
                 :key="g.deposit ?? 'all'"
-                :class="g.deposit ? depClass(g.dep) : 'loc-total'"
+                :class="g.deposit ? [depClass(g.dep), { pinned: isPinned('deposit', g.deposit) }] : 'loc-total'"
                 :title="`${g.median != null ? `median ${formatGap(g.median)} · ` : ''}${g.n} ${g.n === 1 ? 'gap' : 'gaps'}`"
                 @mouseenter="hover = g.deposit ? { type: 'deposit', name: g.deposit } : null"
+                @click="g.deposit && toggle('deposit', g.deposit)"
               >
                 <span class="bar-name">{{ g.deposit ?? 'All deposits' }}</span>
                 <span class="bar-track"><span :style="{ width: (g.avg / maxGap) * 100 + '%' }" /></span>
@@ -79,6 +64,25 @@
             </ul>
             <p v-if="gapRows.length === 0" class="loc-hint">Not enough consecutive clusters here.</p>
             <p v-else class="loc-hint">Time between consecutive clusters of the deposit; hover a bar for the median.</p>
+          </section>
+        </div>
+
+        <div class="loc-lower">
+          <section class="loc-chart">
+            <h3>Materials <small>average share of a rock here</small></h3>
+            <ul @mouseleave="hover = null">
+              <li
+                v-for="m in materials"
+                :key="m.material"
+                :class="[matClass(m), { pinned: isPinned('material', m.material) }]"
+                @mouseenter="hover = { type: 'material', name: m.material }"
+                @click="toggle('material', m.material)"
+              >
+                <span class="bar-name">{{ m.material }}</span>
+                <span class="bar-track"><span :style="{ width: (m.share / maxMaterial) * 100 + '%' }" /></span>
+                <span class="bar-value">{{ matNote(m) ?? formatCell(m.share) + '%' }}</span>
+              </li>
+            </ul>
           </section>
           <section class="loc-chart">
             <h3>
@@ -93,8 +97,9 @@
               <li
                 v-for="m in qualityRows"
                 :key="m.material"
-                :class="matClass(m)"
+                :class="[matClass(m), { pinned: isPinned('material', m.material) }]"
                 @mouseenter="hover = { type: 'material', name: m.material }"
+                @click="toggle('material', m.material)"
               >
                 <span class="bar-name">{{ m.material }}</span>
                 <span class="q-bands">
@@ -104,7 +109,7 @@
                     class="q-band"
                     :style="{ '--a': pct ? 0.12 + (pct / 100) * 0.88 : 0.06 }"
                     :title="`${BAND_LABELS[i]}: ${formatCell(pct)}%`"
-                  ><span v-if="hover && matClass(m) === 'hi' && pct >= 0.5">{{ Math.round(pct) }}</span></span>
+                  ><span v-if="focus.length && matClass(m) === 'hi' && pct >= 0.5">{{ Math.round(pct) }}</span></span>
                 </span>
                 <span class="bar-value">{{ peakBand(m) }}</span>
               </li>
@@ -112,11 +117,11 @@
             <p v-if="qualityRows.length === 0" class="loc-hint">No quality data for these materials.</p>
             <p v-else class="loc-hint">
               Darker means more of the material's {{ qualityMode === 'scu' ? 'SCU' : 'scans' }} fall in that band; the label is the most common one.
-              Hover a row to see the percentages; hover a deposit to see its own distribution.
+              Highlight a row to see the percentages; a single deposit shows its own distribution.
             </p>
           </section>
         </div>
-        <p class="loc-hint">Hover a deposit to light up its materials, or a material to light up the deposits it occurs in.</p>
+        <p class="loc-hint">Hover a deposit to light up its materials, or a material to light up the deposits it occurs in. Click to keep it highlighted; click several to combine them.</p>
       </div>
     </div>
   </div>
@@ -124,6 +129,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useDbStore } from '@/stores/db'
 import { useResultsStore } from '@/stores/results'
 import { formatCell } from '@/lib/results'
@@ -149,14 +155,14 @@ const results = useResultsStore()
 
 // { deposit, share, scans, scu, materials: Map(material → share in deposit), bands: Map(material → {scu, count}), gap: {avg, median, n} | null }
 const deposits = ref([])
-const materials = ref([]) // { material, share, scu (per scan it is in) | null, bands: {scu, count} | null }
+const materials = ref([]) // { material, share, scuTotal | null, materialScans, bands: {scu, count} | null }
 const scanRows = ref([]) // { capture_id, deposit, material, mass, resistance, instability } passing the filters
 const gaps = ref([]) // { deposit | null (all), avg, median | null, n }
 const summary = ref({ scans: 0, share: 0, depositScans: 0, avgScu: 0 })
 const loading = ref(false)
 const error = ref(null)
-const qualityMode = ref('scu') // which band columns the quality strips use
-const hover = ref(null) // { type: 'deposit' | 'material', name }
+const { qualityMode, selection } = storeToRefs(results) // kept in the store across tab switches
+const hover = ref(null) // { type: 'deposit' | 'material', name } under the pointer
 
 const title = computed(() => props.location.region ?? props.location.gravity_well)
 const subtitle = computed(() =>
@@ -184,25 +190,59 @@ const gapRows = computed(() =>
   gaps.value.map((g) => ({ ...g, dep: g.deposit ? depByName.value.get(g.deposit) : null })),
 )
 
-// The figures above the charts follow the hover: all scans, the scans of one
-// deposit, or the scans containing one material
-const stats = computed(() => {
+// ── selection and hover ──────────────────────────────────────────
+// Clicked items stay highlighted (any number of deposits and materials); the item
+// under the pointer is added on top while it is there.
+const isPinned = (type, name) => selection.value.some((i) => i.type === type && i.name === name)
+const focus = computed(() => {
   const h = hover.value
+  return h && !isPinned(h.type, h.name) ? [...selection.value, h] : selection.value
+})
+const focusNames = (type) => focus.value.filter((i) => i.type === type).map((i) => i.name)
+
+function toggle(type, name) {
+  selection.value = isPinned(type, name)
+    ? selection.value.filter((i) => !(i.type === type && i.name === name))
+    : [...selection.value, { type, name }]
+}
+
+const focusText = computed(() => {
+  const d = focusNames('deposit')
+  const m = focusNames('material')
+  if (!d.length && !m.length) return 'All scans here'
+  const parts = []
+  if (d.length) parts.push(`of ${d.join(', ')}`)
+  if (m.length) parts.push(`containing ${m.join(', ')}`)
+  return `Scans ${parts.join(' or ')}`
+})
+
+// The figures above the charts cover all scans, or the scans of the focused
+// deposits / containing the focused materials
+const stats = computed(() => {
+  const deps = new Set(focusNames('deposit'))
+  const mats = new Set(focusNames('material'))
   const scans = new Map()
   for (const r of scanRows.value) {
-    if (h && (h.type === 'deposit' ? r.deposit : r.material) !== h.name) continue
+    if (focus.value.length && !deps.has(r.deposit) && !mats.has(r.material)) continue
     scans.set(r.capture_id, r)
   }
   const avg = (key) => {
     const v = [...scans.values()].map((r) => r[key]).filter((x) => x != null).map(Number)
     return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null
   }
+  // SCU per rock: per deposit scanned, or per scan a material is in. The two
+  // can't be combined, so a mixed selection shows none.
   let scu = summary.value.avgScu
-  if (h?.type === 'deposit') {
-    const d = depByName.value.get(h.name)
-    scu = d?.scans ? d.scu / d.scans : null
-  } else if (h?.type === 'material') {
-    scu = materials.value.find((m) => m.material === h.name)?.scu ?? null
+  if (deps.size && mats.size) {
+    scu = null
+  } else if (deps.size) {
+    const sel = [...deps].map((n) => depByName.value.get(n)).filter(Boolean)
+    const n = sel.reduce((s, d) => s + d.scans, 0)
+    scu = n ? sel.reduce((s, d) => s + d.scu, 0) / n : null
+  } else if (mats.size) {
+    const sel = materials.value.filter((m) => mats.has(m.material) && m.scuTotal != null)
+    const n = sel.reduce((s, m) => s + m.materialScans, 0)
+    scu = n ? sel.reduce((s, m) => s + m.scuTotal, 0) / n : null
   }
   return {
     scans: scans.size,
@@ -213,36 +253,36 @@ const stats = computed(() => {
   }
 })
 
-// ── hover linking ────────────────────────────────────────────────
+// ── highlighting ─────────────────────────────────────────────────
 function depClass(d) {
-  const h = hover.value
-  if (!h || !d) return ''
-  if (h.type === 'deposit') return h.name === d.deposit ? 'hi' : 'dim'
-  return d.materials.has(h.name) ? 'hi' : 'dim'
+  if (!focus.value.length || !d) return ''
+  const mats = focusNames('material')
+  const hit = focusNames('deposit').includes(d.deposit) || mats.some((m) => d.materials.has(m))
+  return hit ? 'hi' : 'dim'
 }
 function matClass(m) {
-  const h = hover.value
-  if (!h) return ''
-  if (h.type === 'material') return h.name === m.material ? 'hi' : 'dim'
-  return depByName.value.get(h.name)?.materials.has(m.material) ? 'hi' : 'dim'
+  if (!focus.value.length) return ''
+  const hit =
+    focusNames('material').includes(m.material) ||
+    focusNames('deposit').some((n) => depByName.value.get(n)?.materials.has(m.material))
+  return hit ? 'hi' : 'dim'
 }
-// Hovering a material shows its share in each deposit instead of the deposit's own
+// With exactly one thing in focus the bars show how it relates to the others:
+// a material's share in each deposit, a deposit's share of each material
+const single = computed(() => (focus.value.length === 1 ? focus.value[0] : null))
 function depNote(d) {
-  const h = hover.value
-  if (h?.type !== 'material') return null
-  const s = d.materials.get(h.name)
-  return s == null ? null : `${formatCell(s)}% ${h.name}`
+  if (single.value?.type !== 'material') return null
+  const s = d.materials.get(single.value.name)
+  return s == null ? null : `${formatCell(s)}% ${single.value.name}`
 }
 function matNote(m) {
-  const h = hover.value
-  if (h?.type !== 'deposit') return null
-  const s = depByName.value.get(h.name)?.materials.get(m.material)
+  if (single.value?.type !== 'deposit') return null
+  const s = depByName.value.get(single.value.name)?.materials.get(m.material)
   return s == null ? null : `${formatCell(s)}% here`
 }
-// Hovering a deposit switches the quality strips to that deposit's own distribution
+// A single focused deposit switches the quality strips to its own distribution
 function bandsOf(m) {
-  const h = hover.value
-  const own = h?.type === 'deposit' ? depByName.value.get(h.name)?.bands.get(m.material) : null
+  const own = single.value?.type === 'deposit' ? depByName.value.get(single.value.name)?.bands.get(m.material) : null
   return (own ?? m.bands)[qualityMode.value]
 }
 function peakBand(m) {
@@ -289,6 +329,9 @@ async function load() {
     build(rows, listed)
     buildGaps()
     // The scans at this place, one row per material, narrowed by the same deposit/material filters
+    selection.value = selection.value.filter((i) =>
+      i.type === 'deposit' ? depByName.value.has(i.name) : materials.value.some((m) => m.material === i.name),
+    )
     scanRows.value = await db.runQuery(
       `SELECT * FROM (
          SELECT s.capture_id, s.deposit, c.type AS material, s.mass, s.resistance, s.instability
@@ -381,7 +424,8 @@ function build(rows, listed) {
   const list = [...acc].map(([material, a]) => ({
     material,
     share: totalScans ? Math.round((a.weighted / totalScans) * 100) / 100 : 0,
-    scu: a.scuTotal != null && a.materialScans ? a.scuTotal / a.materialScans : null,
+    scuTotal: a.scuTotal,
+    materialScans: a.materialScans,
     bands: a.w.scu || a.w.count
       ? {
           scu: a.bands.scu.map((v) => v / (a.w.scu || 1)),

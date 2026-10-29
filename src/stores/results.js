@@ -16,6 +16,11 @@ export const useResultsStore = defineStore('results', () => {
   // The sidebar's own state; quality and date have no counterpart in the results
   const { locationFilters, depositFilters, materialFilters } = storeToRefs(useFiltersStore())
   const sort = ref({ column: null, desc: false })
+  // The open location and what is picked inside it live here, not in the views,
+  // so they survive switching to another tab and back
+  const detail = ref(null) // { system, gravity_well, region } of the open location card
+  const selection = ref([]) // [{ type: 'deposit' | 'material', name }] kept highlighted
+  const qualityMode = ref('scu') // which quality band columns the detail shows
 
   const LOCATION_COLUMNS = ['gravity_well', 'system', 'region']
 
@@ -68,6 +73,9 @@ export const useResultsStore = defineStore('results', () => {
     depositFilters,
     materialFilters,
     sort,
+    detail,
+    selection,
+    qualityMode,
     unusedFilters,
     buildWhere,
   }
