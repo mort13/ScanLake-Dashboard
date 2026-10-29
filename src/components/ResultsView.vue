@@ -1,6 +1,11 @@
 <template>
   <div class="results-view">
-    <div class="view-toolbar">
+    <!-- A location's details replace the cards; the filter sidebar stays available -->
+    <LocationDetail v-if="detail && cardMode" :location="detail" @close="detail = null" />
+
+    <template v-else>
+    <!-- Only worth showing when there is something to switch between -->
+    <div v-if="tables.length > 1" class="view-toolbar">
       <div class="result-tabs" role="tablist">
         <button
           v-for="name in tables"
@@ -80,13 +85,12 @@
       </table>
     </div>
 
-    <LocationDetail v-if="detail && cardMode" :location="detail" @close="detail = null" />
-
     <div v-if="!cardMode && pageCount > 1" class="results-pager">
       <button class="btn-ghost" :disabled="page === 0" @click="page--">‹ Prev</button>
       <span>Page {{ page + 1 }} / {{ pageCount }}</span>
       <button class="btn-ghost" :disabled="page >= pageCount - 1" @click="page++">Next ›</button>
     </div>
+    </template>
   </div>
 </template>
 

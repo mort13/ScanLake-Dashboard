@@ -1,12 +1,12 @@
 <template>
-  <div class="modal-backdrop" @click.self="emit('close')">
-    <div class="loc-modal" role="dialog" aria-modal="true" :aria-label="title">
+  <div class="loc-detail">
+    <div>
       <header class="loc-head">
+        <button class="btn-secondary loc-back" title="Back to all locations (Esc)" @click="emit('close')">‹ Back</button>
         <div>
           <h2>{{ title }}</h2>
           <p>{{ subtitle }}</p>
         </div>
-        <button class="btn-ghost loc-close" title="Close (Esc)" @click="emit('close')">×</button>
       </header>
 
       <p v-if="error" class="panel-error">{{ error }}</p>
@@ -15,11 +15,17 @@
         <p v-if="filterNote" class="meta-note">{{ filterNote }}</p>
 
         <div class="loc-stats">
-          <div><strong>{{ summary.scans.toLocaleString() }}</strong><span>scans</span></div>
+          <div><strong>{{ stats.scans.toLocaleString() }}</strong><span>scans</span></div>
           <div><strong>{{ deposits.length }}</strong><span>deposits</span></div>
           <div><strong>{{ materials.length }}</strong><span>materials</span></div>
-          <div><strong>{{ formatCell(summary.avgScu) }}</strong><span>avg size (SCU)</span></div>
+          <div><strong>{{ formatCell(stats.mass) }}</strong><span>avg mass</span></div>
+          <div><strong>{{ formatCell(stats.scu) }}</strong><span>avg SCU</span></div>
+          <div><strong>{{ formatCell(stats.resistance) }}</strong><span>avg resistance</span></div>
+          <div><strong>{{ formatCell(stats.instability) }}</strong><span>avg instability</span></div>
         </div>
+        <p class="loc-hint loc-focus">
+          {{ hover ? `Scans ${hover.type === 'deposit' ? 'of the deposit' : 'containing'} ${hover.name}` : 'All scans here' }}
+        </p>
 
         <div class="loc-charts">
           <section class="loc-chart">
@@ -143,7 +149,8 @@ const results = useResultsStore()
 
 // { deposit, share, scans, scu, materials: Map(material → share in deposit), bands: Map(material → {scu, count}), gap: {avg, median, n} | null }
 const deposits = ref([])
-const materials = ref([]) // { material, share, bands: {scu, count} | null }
+const materials = ref([]) // { material, share, scu (per scan it is in) | null, bands: {scu, count} | null }
+const scanRows = ref([]) // { capture_id, deposit, material, mass, resistance, instability } passing the filters
 const gaps = ref([]) // { deposit | null (all), avg, median | null, n }
 const summary = ref({ scans: 0, share: 0, depositScans: 0, avgScu: 0 })
 const loading = ref(false)
@@ -176,6 +183,35 @@ const depByName = computed(() => new Map(deposits.value.map((d) => [d.deposit, d
 const gapRows = computed(() =>
   gaps.value.map((g) => ({ ...g, dep: g.deposit ? depByName.value.get(g.deposit) : null })),
 )
+
+// The figures above the charts follow the hover: all scans, the scans of one
+// deposit, or the scans containing one material
+const stats = computed(() => {
+  const h = hover.value
+  const scans = new Map()
+  for (const r of scanRows.value) {
+    if (h && (h.type === 'deposit' ? r.deposit : r.material) !== h.name) continue
+    scans.set(r.capture_id, r)
+  }
+  const avg = (key) => {
+    const v = [...scans.values()].map((r) => r[key]).filter((x) => x != null).map(Number)
+    return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null
+  }
+  let scu = summary.value.avgScu
+  if (h?.type === 'deposit') {
+    const d = depByName.value.get(h.name)
+    scu = d?.scans ? d.scu / d.scans : null
+  } else if (h?.type === 'material') {
+    scu = materials.value.find((m) => m.material === h.name)?.scu ?? null
+  }
+  return {
+    scans: scans.size,
+    mass: avg('mass'),
+    resistance: avg('resistance'),
+    instability: avg('instability'),
+    scu,
+  }
+})
 
 // ── hover linking ────────────────────────────────────────────────
 function depClass(d) {
@@ -252,11 +288,20 @@ async function load() {
     )
     build(rows, listed)
     buildGaps()
+    // The scans at this place, one row per material, narrowed by the same deposit/material filters
+    scanRows.value = await db.runQuery(
+      `SELECT * FROM (
+         SELECT s.capture_id, s.deposit, c.type AS material, s.mass, s.resistance, s.instability
+         FROM (SELECT * FROM scans WHERE ${place}) s
+         LEFT JOIN compositions c ON s.capture_id = c.capture_id
+       ) WHERE ${results.buildWhere(['deposit', 'material'])}`,
+    )
   } catch (err) {
     error.value = err.message
     deposits.value = []
     materials.value = []
     gaps.value = []
+    scanRows.value = []
   } finally {
     loading.value = false
   }
@@ -313,11 +358,15 @@ function build(rows, listed) {
   for (const r of rows) {
     if (!listed.has(r.material)) continue
     const a = acc.get(r.material) ?? {
+      scuTotal: null,
+      materialScans: 0,
       weighted: 0,
       bands: { scu: new Array(BANDS.length).fill(0), count: new Array(BANDS.length).fill(0) },
       w: { scu: 0, count: 0 },
     }
     a.weighted += (num(r.avg_share_pct) ?? 0) * (num(r.composition_scans) ?? 0)
+    if (r.total_scu != null) a.scuTotal = (a.scuTotal ?? 0) + num(r.total_scu)
+    a.materialScans += num(r.material_scans) ?? 0
     const bands = bandsOfRow(r)
     if (bands) {
       // SCU bands weigh a deposit by the material's SCU there, count bands by its scans
@@ -332,6 +381,7 @@ function build(rows, listed) {
   const list = [...acc].map(([material, a]) => ({
     material,
     share: totalScans ? Math.round((a.weighted / totalScans) * 100) / 100 : 0,
+    scu: a.scuTotal != null && a.materialScans ? a.scuTotal / a.materialScans : null,
     bands: a.w.scu || a.w.count
       ? {
           scu: a.bands.scu.map((v) => v / (a.w.scu || 1)),

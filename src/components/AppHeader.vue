@@ -59,12 +59,12 @@ const dashboard = useDashboardStore()
 const emit = defineEmits(['openQuery', 'addPanel', 'update:view'])
 
 defineProps({
-  view: { type: String, default: 'dashboard' },
+  view: { type: String, default: 'results' },
 })
 
 const TABS = [
-  { id: 'dashboard', label: 'Dashboard' },
   { id: 'results', label: 'Results' },
+  { id: 'dashboard', label: 'Dashboard' },
   { id: 'highscores', label: 'Highscores' },
 ]
 

@@ -880,26 +880,12 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 .mat-share { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-muted); }
 .region-foot { margin-top: 6px; font-size: 11px; color: var(--text-subtle); }
 
-/* ── Location detail window ────────────────────────────────────── */
-.modal-backdrop {
-  position: fixed; inset: 0; z-index: 100;
-  display: flex; align-items: center; justify-content: center;
-  padding: 24px;
-  background: rgba(0, 0, 0, 0.6);
-}
-.loc-modal {
-  width: min(960px, 100%);
-  max-height: 100%;
-  overflow-y: auto;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 16px 20px 20px;
-}
-.loc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+/* ── Location detail ───────────────────────────────────────────── */
+.loc-head { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
 .loc-head h2 { font-size: 18px; font-weight: 600; }
 .loc-head p { font-size: 12px; color: var(--text-muted); }
-.loc-close { font-size: 20px; line-height: 1; }
+.loc-back { flex-shrink: 0; }
+.loc-focus { min-height: 14px; margin-top: -6px; }
 .loc-body { display: flex; flex-direction: column; gap: 14px; }
 .loc-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
 .loc-stats > div {

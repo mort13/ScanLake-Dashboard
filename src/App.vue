@@ -44,7 +44,8 @@ import ResultsView from '@/components/ResultsView.vue'
 import HighscoresView from '@/components/HighscoresView.vue'
 import QueryEditor from '@/components/QueryEditor.vue'
 
-const VIEWS = ['dashboard', 'results', 'highscores']
+const VIEWS = ['results', 'dashboard', 'highscores']
+const DEFAULT_VIEW = VIEWS[0]
 
 const db = useDbStore()
 const filters = useFiltersStore()
@@ -56,12 +57,12 @@ const queryEditorOpen = ref(false)
 // The tab lives in the URL hash so a view can be linked and survives a reload
 const fromHash = () => {
   const id = location.hash.slice(1)
-  return VIEWS.includes(id) ? id : 'dashboard'
+  return VIEWS.includes(id) ? id : DEFAULT_VIEW
 }
 const view = ref(fromHash())
 window.addEventListener('hashchange', () => { view.value = fromHash() })
 watch(view, (id) => {
-  if (fromHash() !== id) history.replaceState(null, '', id === 'dashboard' ? location.pathname : `#${id}`)
+  if (fromHash() !== id) history.replaceState(null, '', id === DEFAULT_VIEW ? location.pathname : `#${id}`)
   // Charts drawn while hidden have no size; let them re-measure
   if (id === 'dashboard') nextTick(() => window.dispatchEvent(new Event('resize')))
 })
