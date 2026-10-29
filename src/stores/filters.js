@@ -1,10 +1,18 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useDbStore } from './db'
 import { useAliasesStore } from './aliases'
+import { useAuthStore } from './auth'
 
 export const useFiltersStore = defineStore('filters', () => {
+  const auth = useAuthStore()
+
   // ── Filter State ───────────────────────────────────────────────
+  // Only the logged-in Discord account's scans (its linked ScanLake userIds)
+  const mineOnly = ref(false)
+  // The toggle is hidden when logged out, so don't leave it filtering everything away
+  watch(() => auth.isLoggedIn, (loggedIn) => { if (!loggedIn) mineOnly.value = false })
+
   // Location: array of strings, matches gravity_well OR system OR region
   const locationFilters = ref([])
 
@@ -30,6 +38,7 @@ export const useFiltersStore = defineStore('filters', () => {
 
   const hasActiveFilters = computed(
     () =>
+      mineOnly.value ||
       locationFilters.value.length > 0 ||
       depositFilters.value.length > 0 ||
       materialFilters.value.length > 0 ||
@@ -105,6 +114,12 @@ export const useFiltersStore = defineStore('filters', () => {
 
     const al = useAliasesStore()
 
+    if (mineOnly.value && hasScans) {
+      // An account with no linked IDs has no scans of its own
+      const ids = auth.userIds.map(sqlStr).join(', ')
+      parts.push(ids ? `s.user_id IN (${ids})` : '1=0')
+    }
+
     if (locationFilters.value.length > 0 && hasScans) {
       // defensive: support both plain strings and legacy {value,negated} objects
       // expand alias display names to all underlying raw values
@@ -154,6 +169,7 @@ export const useFiltersStore = defineStore('filters', () => {
   }
 
   function clearAll() {
+    mineOnly.value = false
     locationFilters.value = []
     depositFilters.value = []
     materialFilters.value = []
@@ -163,6 +179,7 @@ export const useFiltersStore = defineStore('filters', () => {
 
   // A single string that changes whenever any filter changes — used by panels as watch target
   const filterSignature = computed(() => [
+    mineOnly.value ? 'mine:' + auth.userIds.join(',') : '',
     locationFilters.value.map((f) => typeof f === 'string' ? f : (f.negated ? '!' : '') + f.value).join('\x00'),
     depositFilters.value.map((m) => (m.negated ? '!' : '') + m.value).join('\x00'),
     materialFilters.value.map((m) => (m.negated ? '!' : '') + m.value).join('\x00'),
@@ -171,6 +188,7 @@ export const useFiltersStore = defineStore('filters', () => {
   ].join('|'))
 
   return {
+    mineOnly,
     locationFilters,
     depositFilters,
     materialFilters,

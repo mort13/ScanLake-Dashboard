@@ -127,7 +127,9 @@ const cardMode = computed(() => results.active === CARD_TABLE)
 const SHOWN_TABLES = [CARD_TABLE]
 const tables = computed(() => SHOWN_TABLES.filter((t) => db.resultTables.includes(t)))
 const columns = computed(() => schema.value.map((c) => c.column_name))
-const unused = computed(() => results.unusedFilters(columns.value))
+// How the hint names each unused filter, where its key alone doesn't read well
+const FILTER_NAMES = { mine: '"Only my scans"' }
+const unused = computed(() => results.unusedFilters(columns.value).map((f) => FILTER_NAMES[f] ?? f))
 const pageCount = computed(() => Math.ceil(total.value / PAGE_SIZE))
 // The results are precomputed, so the sidebar's quality and date filters can't be applied
 const ignored = computed(

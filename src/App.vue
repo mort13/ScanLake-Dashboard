@@ -36,6 +36,7 @@ import { useDbStore } from '@/stores/db'
 import { useFiltersStore } from '@/stores/filters'
 import { useDashboardStore } from '@/stores/dashboard'
 import { useAliasesStore } from '@/stores/aliases'
+import { useAuthStore } from '@/stores/auth'
 import AppHeader from '@/components/AppHeader.vue'
 import SessionTicker from '@/components/SessionTicker.vue'
 import FilterSidebar from '@/components/FilterSidebar.vue'
@@ -51,6 +52,7 @@ const db = useDbStore()
 const filters = useFiltersStore()
 const dashboard = useDashboardStore()
 const aliases = useAliasesStore()
+const auth = useAuthStore()
 
 const queryEditorOpen = ref(false)
 
@@ -68,6 +70,9 @@ watch(view, (id) => {
 })
 
 onMounted(async () => {
+  // Check the optional Discord login in the background — never holds up the data
+  auth.load()
+
   // Load aliases config (optional — silently skipped if file missing)
   await aliases.load()
 

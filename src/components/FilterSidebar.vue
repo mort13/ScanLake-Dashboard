@@ -7,6 +7,15 @@
     <div class="sidebar-body" v-show="!collapsed">
       <h3 class="sidebar-title">Filters</h3>
 
+      <!-- Only the scans of the IDs linked to the Discord login -->
+      <div v-if="auth.isLoggedIn" class="filter-group">
+        <label class="mine-toggle">
+          <input type="checkbox" v-model="filters.mineOnly" />
+          Only my scans
+        </label>
+        <p v-if="auth.userIds.length === 0" class="filter-hint">No ScanLake IDs are linked to this account yet</p>
+      </div>
+
       <!-- Location filter -->
       <FilterGroup label="Location" hint="system, gravity well, or region">
         <TagInput
@@ -110,10 +119,12 @@
 <script setup>
 import { ref } from 'vue'
 import { useFiltersStore } from '@/stores/filters'
+import { useAuthStore } from '@/stores/auth'
 import FilterGroup from './FilterGroup.vue'
 import TagInput from './TagInput.vue'
 
 const filters = useFiltersStore()
+const auth = useAuthStore()
 const collapsed = ref(false)
 
 // 'results' hides the quality and date filters, which the precomputed results can't use
@@ -146,6 +157,21 @@ function clear() {
 </script>
 
 <style scoped>
+.mine-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.mine-toggle input {
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 .quality-inputs {
   display: flex;
   gap: 12px;

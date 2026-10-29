@@ -14,7 +14,7 @@ import { useFiltersStore } from './filters'
 export const useResultsStore = defineStore('results', () => {
   const active = ref(null) // selected job name
   // The sidebar's own state; quality and date have no counterpart in the results
-  const { locationFilters, depositFilters, materialFilters } = storeToRefs(useFiltersStore())
+  const { mineOnly, locationFilters, depositFilters, materialFilters } = storeToRefs(useFiltersStore())
   const sort = ref({ column: null, desc: false })
   // The open location and what is picked inside it live here, not in the views,
   // so they survive switching to another tab and back
@@ -27,6 +27,8 @@ export const useResultsStore = defineStore('results', () => {
   /** Filters the table can't use, as [label, ...] — shown as a hint in the UI. */
   function unusedFilters(columns) {
     const unused = []
+    // The result tables are aggregated over everyone's scans and have no user_id
+    if (mineOnly.value) unused.push('mine')
     if (locationFilters.value.length && !LOCATION_COLUMNS.some((c) => columns.includes(c))) {
       unused.push('location')
     }
