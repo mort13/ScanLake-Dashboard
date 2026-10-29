@@ -70,6 +70,7 @@
         <div class="loc-lower">
           <section class="loc-chart">
             <h3>Materials <small>average share of a rock here</small></h3>
+            <div class="q-axis" aria-hidden="true" />
             <ul @mouseleave="hover = null">
               <li
                 v-for="m in materials"
@@ -114,7 +115,7 @@
                 <span class="bar-value">{{ peakBand(m) }}</span>
               </li>
             </ul>
-            <p v-if="qualityRows.length === 0" class="loc-hint">No quality data for these materials.</p>
+            <p v-if="!hasQuality" class="loc-hint">No quality data for these materials.</p>
             <p v-else class="loc-hint">
               Darker means more of the material's {{ qualityMode === 'scu' ? 'SCU' : 'scans' }} fall in that band; the label is the most common one.
               Highlight a row to see the percentages; a single deposit shows its own distribution.
@@ -143,6 +144,8 @@ const BAND_COLUMNS = {
   scu: BANDS.map((b) => `quality_${b}_scu_pct`),
   count: BANDS.map((b) => `quality_${b}_count_pct`),
 }
+
+const NO_BANDS = BANDS.map(() => 0)
 
 const props = defineProps({
   // { system, gravity_well, region } of the clicked card
@@ -183,7 +186,8 @@ const filterNote = computed(() => {
 const maxDeposit = computed(() => Math.max(1, ...deposits.value.map((d) => d.share)))
 const maxMaterial = computed(() => Math.max(1, ...materials.value.map((m) => m.share)))
 const maxGap = computed(() => Math.max(1, ...gaps.value.map((g) => g.avg)))
-const qualityRows = computed(() => materials.value.filter((m) => m.bands))
+const qualityRows = computed(() => materials.value)
+const hasQuality = computed(() => materials.value.some((m) => m.bands))
 const depByName = computed(() => new Map(deposits.value.map((d) => [d.deposit, d])))
 // Gap rows carry their deposit so the hover linking can reuse depClass
 const gapRows = computed(() =>
@@ -283,7 +287,7 @@ function matNote(m) {
 // A single focused deposit switches the quality strips to its own distribution
 function bandsOf(m) {
   const own = single.value?.type === 'deposit' ? depByName.value.get(single.value.name)?.bands.get(m.material) : null
-  return (own ?? m.bands)[qualityMode.value]
+  return (own ?? m.bands)?.[qualityMode.value] ?? NO_BANDS
 }
 function peakBand(m) {
   const bands = bandsOf(m)
