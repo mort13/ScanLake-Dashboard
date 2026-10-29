@@ -154,8 +154,9 @@ const detail = ref(null) // the card whose details are open
 const CARD_TABLE = 'deposit_materials_by_region'
 const cardMode = computed(() => results.active === CARD_TABLE)
 
-// Highscores have their own tab
-const tables = computed(() => db.resultTables.filter((t) => t !== 'highscores'))
+// The result tables that get a tab, in this order (highscores have their own page)
+const SHOWN_TABLES = [CARD_TABLE]
+const tables = computed(() => SHOWN_TABLES.filter((t) => db.resultTables.includes(t)))
 const columns = computed(() => schema.value.map((c) => c.column_name))
 const unused = computed(() => results.unusedFilters(columns.value))
 const pageCount = computed(() => Math.ceil(total.value / PAGE_SIZE))

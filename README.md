@@ -15,7 +15,7 @@ The Cloudflare Pages Function at `functions/api/[[path]].js` forwards requests t
 ## Features
 
 - Three tabs (`#dashboard`, `#results`, `#highscores` in the URL): the panel dashboard, the Refinery's result tables, and the highscore boards
-- Results tab: every `results/<job>.parquet` as a sortable, paged table, filterable by location (gravity well / system / region), deposit and material (deposit and material accept `!` to exclude). A filter only applies to tables that have the matching column and says so otherwise; the shown rows can be exported as CSV
+- Results tab: `results/deposit_materials_by_region.parquet` as one card per location, materials ordered by concentration; click a card for deposit and material charts, time between clusters and quality bands (by SCU or count). Filterable by location (gravity well / system / region), deposit and material (deposit and material accept `!` to exclude). The other result tables are loaded but not shown
 - Highscores tab: the top 10 per category from `results/highscores.parquet`
 - A running text under the header lists sessions that are new since the last visit or the last background refresh (the known session ids are kept in `localStorage`; the first visit only records them). It can be dismissed
 - Drag-and-drop resizable panel grid (GridStack)
