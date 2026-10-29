@@ -102,9 +102,9 @@
                     v-for="(pct, i) in bandsOf(m)"
                     :key="i"
                     class="q-band"
-                    :style="{ opacity: pct ? 0.12 + (pct / 100) * 0.88 : 0.06 }"
+                    :style="{ '--a': pct ? 0.12 + (pct / 100) * 0.88 : 0.06 }"
                     :title="`${BAND_LABELS[i]}: ${formatCell(pct)}%`"
-                  />
+                  ><span v-if="hover && matClass(m) === 'hi' && pct >= 0.5">{{ Math.round(pct) }}</span></span>
                 </span>
                 <span class="bar-value">{{ peakBand(m) }}</span>
               </li>
@@ -112,7 +112,7 @@
             <p v-if="qualityRows.length === 0" class="loc-hint">No quality data for these materials.</p>
             <p v-else class="loc-hint">
               Darker means more of the material's {{ qualityMode === 'scu' ? 'SCU' : 'scans' }} fall in that band; the label is the most common one.
-              Hover a deposit to see its own distribution.
+              Hover a row to see the percentages; hover a deposit to see its own distribution.
             </p>
           </section>
         </div>

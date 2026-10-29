@@ -919,8 +919,20 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 .bar-track > span { display: block; height: 100%; background: var(--accent); }
 .bar-value { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-muted); white-space: nowrap; }
 .loc-chart li.hi .bar-value { color: var(--text); }
-.q-bands { display: flex; gap: 2px; height: 14px; }
-.q-band { flex: 1; border-radius: 2px; background: var(--accent); }
+.q-bands { display: flex; gap: 2px; height: 18px; }
+.q-band {
+  position: relative;
+  flex: 1;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+/* The fill is a layer of its own so the number on top keeps full opacity */
+.q-band::before {
+  content: ""; position: absolute; inset: 0;
+  background: var(--accent); opacity: var(--a, 0.06); border-radius: 2px;
+}
+.q-band > span { position: relative; }
 .q-axis { display: flex; justify-content: space-between; margin-left: 122px; margin-right: 108px; font-size: 10px; color: var(--text-subtle); }
 .loc-chart li.loc-total { margin-top: 4px; border-top: 1px solid var(--border); border-radius: 0; font-weight: 600; }
 .loc-table { width: 100%; }
