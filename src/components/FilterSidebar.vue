@@ -34,7 +34,7 @@
         <TagInput
           v-model="filters.materialFilters"
           :suggestions="filters.acMaterial"
-          placeholder="e.g. iron, !none"
+          placeholder="e.g. Iron, !Inert Materials"
           :allow-negation="true"
           :as-objects="true"
         />
