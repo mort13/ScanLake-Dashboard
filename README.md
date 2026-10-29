@@ -4,7 +4,7 @@ A browser-based analytics dashboard for ScanLake scan data. Parquet files are qu
 
 ## How it works
 
-On load, the app fetches the consolidated Parquet files that ScanLake Refinery publishes to the `scanlake-derived` bucket (`/api/derived/consolidated/{scans,compositions,confidences}.parquet`) and registers each as a view of the same name inside DuckDB WASM. The Refinery already deduplicates captures, unifies the schema and normalises names, so the dashboard does no merging of its own.
+On load, the app fetches the consolidated Parquet files that ScanLake Refinery publishes to the `scanlake-derived` bucket (`/api/derived/consolidated/{scans,compositions}.parquet`) plus the two result files it shows (`results/deposit_materials_by_region.parquet`, `results/highscores.parquet`) and registers each as a view inside DuckDB WASM. Nothing else in the bucket is downloaded. The Refinery already deduplicates captures, unifies the schema and normalises names, so the dashboard does no merging of its own.
 
 The files are cached in the browser (Cache Storage, `scanlake-parquet`). Each load first reads the bucket's `manifest.json` and looks up every file by the sha256 listed there, so a reload downloads only the files the Refinery has changed since, and older versions are removed from the cache. If the manifest can't be read, the files are downloaded without caching.
 

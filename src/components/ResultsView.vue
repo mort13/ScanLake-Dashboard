@@ -13,48 +13,14 @@
       </div>
     </div>
 
-    <div class="results-filters">
-      <FilterGroup label="Location" hint="system, gravity well, or region">
-        <TagInput
-          v-model="results.locationFilters"
-          :suggestions="filters.acLocation"
-          placeholder="e.g. Pyro, Bloom"
-          :allow-negation="false"
-          :as-objects="false"
-        />
-      </FilterGroup>
-      <FilterGroup label="Deposit" hint="prefix with ! to exclude">
-        <TagInput
-          v-model="results.depositFilters"
-          :suggestions="filters.acDeposit"
-          placeholder="e.g. Quantanium, !Tungsten"
-          :allow-negation="true"
-          :as-objects="true"
-        />
-      </FilterGroup>
-      <FilterGroup label="Material" hint="prefix with ! to exclude">
-        <TagInput
-          v-model="results.materialFilters"
-          :suggestions="filters.acMaterial"
-          placeholder="e.g. Iron, !Inert Materials"
-          :allow-negation="true"
-          :as-objects="true"
-        />
-      </FilterGroup>
-    </div>
-
     <div class="results-meta">
       <span v-if="unused.length" class="meta-note">
         The {{ unused.join(' and ') }} filter doesn't apply to this table (no matching column).
       </span>
       <span v-else-if="error" class="panel-error">{{ error }}</span>
+      <span v-else-if="ignored" class="meta-note">Quality and date filters don't apply to these results.</span>
       <span v-else class="meta-count">{{ total.toLocaleString() }} {{ total === 1 ? 'row' : 'rows' }}</span>
       <span class="meta-spacer" />
-      <button
-        v-if="hasFilters"
-        class="btn-ghost"
-        @click="results.clearFilters()"
-      >Clear filters</button>
       <button class="btn-secondary" :disabled="total === 0" @click="exportCsv">↓ CSV</button>
     </div>
 
@@ -131,8 +97,6 @@ import { useFiltersStore } from '@/stores/filters'
 import { useResultsStore } from '@/stores/results'
 import { selectList, metaLast, prettyName, formatCell } from '@/lib/results'
 import { rowsToCsv, downloadCsv } from '@/lib/csv'
-import FilterGroup from '@/components/FilterGroup.vue'
-import TagInput from '@/components/TagInput.vue'
 import LocationDetail from '@/components/LocationDetail.vue'
 
 const PAGE_SIZE = 100
@@ -160,11 +124,13 @@ const tables = computed(() => SHOWN_TABLES.filter((t) => db.resultTables.include
 const columns = computed(() => schema.value.map((c) => c.column_name))
 const unused = computed(() => results.unusedFilters(columns.value))
 const pageCount = computed(() => Math.ceil(total.value / PAGE_SIZE))
-const hasFilters = computed(
+// The results are precomputed, so the sidebar's quality and date filters can't be applied
+const ignored = computed(
   () =>
-    results.locationFilters.length > 0 ||
-    results.depositFilters.length > 0 ||
-    results.materialFilters.length > 0,
+    filters.qualityRange[0] !== 0 ||
+    filters.qualityRange[1] !== 1000 ||
+    filters.dateRange[0] !== null ||
+    filters.dateRange[1] !== null,
 )
 
 function orderClause() {

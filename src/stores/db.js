@@ -14,7 +14,9 @@ const BUNDLES = {
   },
 }
 
-const TABLES = ['scans', 'compositions', 'confidences']
+// Only what the dashboard reads: the scan and composition tables, and the result jobs it shows
+const TABLES = ['scans', 'compositions']
+const RESULT_JOBS = ['deposit_materials_by_region', 'highscores']
 const RESULT_KEY_RE = /^results\/([a-z0-9_]+)\.parquet$/
 const CACHE_NAME = 'scanlake-parquet'
 const REFRESH_INTERVAL_MS = 15 * 60 * 1000
@@ -72,7 +74,7 @@ export const useDbStore = defineStore('db', () => {
   // ── Parquet loading ───────────────────────────────────────────
   // ScanLake Refinery publishes one consolidated file per table to the derived
   // bucket (deduplicated per capture, one schema, names normalised) plus one
-  // results/<job>.parquet per job, exposed here as the view results_<job>.
+  // results/<job>.parquet per job; the ones in RESULT_JOBS are exposed here as the view results_<job>.
   // Files are cached in the browser under the sha256 listed in the bucket's
   // manifest, so a reload downloads only the files that changed since.
   async function loadParquets() {
@@ -110,7 +112,7 @@ export const useDbStore = defineStore('db', () => {
     if (!_refreshTimer) _refreshTimer = setInterval(refresh, REFRESH_INTERVAL_MS)
   }
 
-  /** Files to load: the consolidated tables (required) and every results file in the manifest. */
+  /** Files to load: the consolidated tables (required) and the results files of RESULT_JOBS. */
   function _targets(hashes) {
     const targets = TABLES.map((view) => {
       const key = `consolidated/${view}.parquet`
@@ -118,7 +120,7 @@ export const useDbStore = defineStore('db', () => {
     })
     for (const [key, hash] of Object.entries(hashes ?? {})) {
       const m = RESULT_KEY_RE.exec(key)
-      if (m) targets.push({ view: `results_${m[1]}`, key, hash, required: false })
+      if (m && RESULT_JOBS.includes(m[1])) targets.push({ view: `results_${m[1]}`, key, hash, required: false })
     }
     return targets
   }

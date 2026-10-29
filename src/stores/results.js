@@ -1,20 +1,20 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useAliasesStore } from './aliases'
+import { useFiltersStore } from './filters'
 
 /**
- * Filter state of the Results tab, kept here so it survives switching tabs.
- * The filters are independent of the dashboard sidebar and apply to whichever
- * result table is shown, on the columns that table has:
+ * Turns the filter sidebar's selections (shared with the dashboard) into SQL for
+ * the result tables, on the columns each table has:
  *   location → gravity_well, system, region
  *   deposit  → deposit
  *   material → material
  */
 export const useResultsStore = defineStore('results', () => {
   const active = ref(null) // selected job name
-  const locationFilters = ref([]) // strings
-  const depositFilters = ref([]) // { value, negated }
-  const materialFilters = ref([]) // { value, negated }
+  // The sidebar's own state; quality and date have no counterpart in the results
+  const { locationFilters, depositFilters, materialFilters } = storeToRefs(useFiltersStore())
   const sort = ref({ column: null, desc: false })
 
   const LOCATION_COLUMNS = ['gravity_well', 'system', 'region']
@@ -62,12 +62,6 @@ export const useResultsStore = defineStore('results', () => {
     return parts.length ? parts.join(' AND ') : '1=1'
   }
 
-  function clearFilters() {
-    locationFilters.value = []
-    depositFilters.value = []
-    materialFilters.value = []
-  }
-
   return {
     active,
     locationFilters,
@@ -76,7 +70,6 @@ export const useResultsStore = defineStore('results', () => {
     sort,
     unusedFilters,
     buildWhere,
-    clearFilters,
   }
 })
 

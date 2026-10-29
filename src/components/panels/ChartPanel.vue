@@ -81,7 +81,9 @@ function renderPlot(rows) {
       type: 'pie',
       labels: rows.map((r) => r[chart.x]),
       values: rows.map((r) => r[chart.y]),
-      textinfo: 'label+percent',
+      // Percent inside the slices (hidden where they do not fit); names are in the hover
+      textinfo: 'percent',
+      textposition: 'inside',
       hoverinfo: 'label+value+percent',
       marker: {
         color: rows.map((_, i) => {
@@ -157,6 +159,7 @@ function plotlyLayout(title) {
     font: { color: '#c9d1d9', family: 'Inter, system-ui, sans-serif', size: 12 },
     margin: { t: 10, r: 16, b: 48, l: 52 },
     showlegend: false,
+    uniformtext: { minsize: 10, mode: 'hide' },
     xaxis: { gridcolor: 'rgba(255,255,255,0.07)', zerolinecolor: 'rgba(255,255,255,0.1)' },
     yaxis: { gridcolor: 'rgba(255,255,255,0.07)', zerolinecolor: 'rgba(255,255,255,0.1)' },
   }

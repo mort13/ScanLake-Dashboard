@@ -66,13 +66,13 @@
     }
   ],
   "layout": [
-    { "id": "p-stats",          "x": 0, "y": 0,  "w": 12, "h": 2 },
-    { "id": "p-scans-per-gw",   "x": 0, "y": 2,  "w": 6,  "h": 4 },
-    { "id": "p-scans-per-user", "x": 6, "y": 2,  "w": 6,  "h": 4 },
-    { "id": "p-quality-count",  "x": 6, "y": 6,  "w": 6,  "h": 4 },
-    { "id": "p-quality-volume", "x": 0, "y": 10, "w": 6,  "h": 4 },
-    { "id": "p-mass-resistance","x": 6, "y": 10, "w": 6,  "h": 4 },
-    { "id": "p-material-pie",   "x": 0, "y": 14, "w": 6,  "h": 4 },
-    { "id": "p-deposit-pie",    "x": 6, "y": 14, "w": 6,  "h": 4 }
+    { "id": "p-stats",            "x": 0, "y": 0, "w": 12, "h": 2 },
+    { "id": "p-scans-per-gw",     "x": 0, "y": 2, "w": 8, "h": 6 },
+    { "id": "p-scans-per-user",   "x": 8, "y": 2, "w": 4, "h": 6 },
+    { "id": "p-quality-count",    "x": 0, "y": 8, "w": 6, "h": 6 },
+    { "id": "p-quality-volume",   "x": 6, "y": 8, "w": 6, "h": 6 },
+    { "id": "p-mass-resistance",  "x": 0, "y": 14, "w": 12, "h": 6 },
+    { "id": "p-material-pie",     "x": 0, "y": 20, "w": 6, "h": 7 },
+    { "id": "p-deposit-pie",      "x": 6, "y": 20, "w": 6, "h": 7 }
   ]
 }

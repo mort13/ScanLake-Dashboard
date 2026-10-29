@@ -4,7 +4,7 @@
     <SessionTicker />
 
     <div class="app-body">
-      <FilterSidebar v-show="view === 'dashboard'" @apply="onFiltersApply" />
+      <FilterSidebar v-show="view !== 'highscores'" :scope="view === 'results' ? 'results' : 'dashboard'" @apply="onFiltersApply" />
       <main class="dashboard-main">
         <div v-if="db.status === 'idle' || db.status === 'initializing' || db.status === 'loading'" class="loading-overlay">
           <span class="spinner lg" />

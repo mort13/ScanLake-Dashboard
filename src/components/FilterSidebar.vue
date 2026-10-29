@@ -41,7 +41,7 @@
       </FilterGroup>
 
       <!-- Quality range -->
-      <FilterGroup label="Quality Range">
+      <FilterGroup v-if="scope === 'dashboard'" label="Quality Range">
         <div class="quality-inputs">
           <div class="quality-input-group">
             <label for="quality-min">Min</label>
@@ -67,7 +67,7 @@
       </FilterGroup>
 
       <!-- Date range (only shown when a date column is detected) -->
-      <FilterGroup v-if="filters.dateColumn" label="Date Range">
+      <FilterGroup v-if="scope === 'dashboard' && filters.dateColumn" label="Date Range">
         <div class="date-inputs">
           <div class="date-input-group">
             <label for="date-from">From</label>
@@ -116,6 +116,8 @@ import TagInput from './TagInput.vue'
 const filters = useFiltersStore()
 const collapsed = ref(false)
 
+// 'results' hides the quality and date filters, which the precomputed results can't use
+defineProps({ scope: { type: String, default: 'dashboard' } })
 const emit = defineEmits(['apply'])
 
 function setQualityMin(v) {
