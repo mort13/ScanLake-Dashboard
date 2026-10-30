@@ -5,7 +5,7 @@
         <button class="btn-secondary loc-back" title="Back to all materials (Esc)" @click="emit('close')">‹ Back</button>
         <div>
           <h2>{{ material }}</h2>
-          <p>{{ subtitle }}</p>
+          <p>{{ locations.length }} {{ locations.length === 1 ? 'location' : 'locations' }}</p>
         </div>
       </header>
 
@@ -15,25 +15,60 @@
         <p v-if="filterNote" class="meta-note">{{ filterNote }}</p>
 
         <div class="loc-stats">
-          <div><strong>{{ locations.length }}</strong><span>locations</span></div>
-          <div><strong>{{ deposits.length }}</strong><span>deposits</span></div>
-          <div><strong>{{ stats.scans.toLocaleString() }}</strong><span>scans contain it</span></div>
-          <div><strong>{{ formatCell(stats.scu) }}</strong><span>avg SCU per scan</span></div>
+          <div><strong>{{ locationRows.length }}</strong><span>{{ locationRows.length === 1 ? 'location' : 'locations' }}</span></div>
+          <div><strong>{{ depositRows.length }}</strong><span>{{ depositRows.length === 1 ? 'deposit' : 'deposits' }}</span></div>
+          <div><strong>{{ overall.scans.toLocaleString() }}</strong><span>scans contain it</span></div>
+          <div><strong>{{ formatCell(overall.mass) }}</strong><span>avg mass</span></div>
+          <div><strong>{{ formatCell(overall.scu) }}</strong><span>avg SCU</span></div>
+          <div><strong>{{ formatCell(overall.resistance) }}</strong><span>avg resistance</span></div>
+          <div><strong>{{ formatCell(overall.instability) }}</strong><span>avg instability</span></div>
         </div>
+        <p class="loc-hint loc-focus">
+          {{ focusText }}
+          <button v-if="selection.length" class="btn-ghost loc-clear" @click="selection = []">Clear selection</button>
+        </p>
 
         <section class="loc-chart">
-          <h3>Location <small>concentration of {{ material }} in a rock there; pick one to focus on it</small></h3>
-          <div class="result-tabs">
-            <button class="result-chip" :class="{ active: !location }" @click="location = null">All locations</button>
-            <button
-              v-for="l in locations"
-              :key="l.key"
-              class="result-chip"
-              :class="{ active: location === l.key }"
-              :title="`${l.system} · ${l.gravity_well} · present in ${formatCell(l.presence)}% of scans there`"
-              @click="location = location === l.key ? null : l.key"
-            >{{ locationName(l) }} <small>{{ formatCell(l.share) }}%</small></button>
+          <h3>Locations <small>concentration of {{ material }} in a rock there</small></h3>
+          <div class="table-scroll">
+            <table class="result-table loc-table loc-compare" @mouseleave="hover = null">
+              <thead>
+                <tr>
+                  <th>location</th>
+                  <th>concentration</th>
+                  <th>scans</th>
+                  <th>avg mass</th>
+                  <th>avg SCU</th>
+                  <th>avg resistance</th>
+                  <th>avg instability</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="l in locationRows"
+                  :key="l.key"
+                  :class="[locClass(l), { pinned: isPinned('location', l.key) }]"
+                  :title="`${l.system} · ${l.gravity_well} · present in ${formatCell(l.presence)}% of scans there`"
+                  @mouseenter="hover = { type: 'location', name: l.key }"
+                  @click="toggle('location', l.key)"
+                >
+                  <td>{{ locationName(l) }} <small class="loc-sub">{{ l.system }}</small></td>
+                  <td>
+                    <div class="loc-conc">
+                    <span class="bar-track"><span :style="{ width: (l.share / maxShare) * 100 + '%' }" /></span>
+                    <span class="num">{{ formatCell(l.share) }}%</span>
+                  </div>
+                  </td>
+                  <td class="num">{{ l.m.scans.toLocaleString() }}</td>
+                  <td class="num">{{ formatCell(l.m.mass) }}</td>
+                  <td class="num">{{ formatCell(l.m.scu) }}</td>
+                  <td class="num">{{ formatCell(l.m.resistance) }}</td>
+                  <td class="num">{{ formatCell(l.m.instability) }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
+          <p class="loc-hint">Click locations to keep them highlighted and compare; the charts below follow the selection.</p>
         </section>
 
         <div class="loc-charts">
@@ -41,28 +76,30 @@
             <h3>Deposits <small>share of the deposit that is {{ material }}</small></h3>
             <ul @mouseleave="hover = null">
               <li
-                v-for="d in deposits"
+                v-for="d in depositRows"
                 :key="d.deposit"
-                :class="rowClass(d)"
+                :class="[depClass(d), { pinned: isPinned('deposit', d.deposit) }]"
                 :title="`Present in ${formatCell(d.presence)}% of the ${d.scans.toLocaleString()} scans of this deposit`"
-                @mouseenter="hover = d.deposit"
+                @mouseenter="hover = { type: 'deposit', name: d.deposit }"
+                @click="toggle('deposit', d.deposit)"
               >
                 <span class="bar-name">{{ d.deposit }}</span>
-                <span class="bar-track"><span :style="{ width: (d.share / maxShare) * 100 + '%' }" /></span>
+                <span class="bar-track"><span :style="{ width: (d.share / maxDepositShare) * 100 + '%' }" /></span>
                 <span class="bar-value">{{ formatCell(d.share) }}%</span>
               </li>
             </ul>
           </section>
 
           <section class="loc-chart">
-            <h3>Time between clusters <small>average, per deposit{{ locationLabel }}</small></h3>
+            <h3>Time between clusters <small>average, per deposit</small></h3>
             <ul @mouseleave="hover = null">
               <li
-                v-for="d in deposits"
+                v-for="d in depositRows"
                 :key="d.deposit"
-                :class="rowClass(d)"
+                :class="[depClass(d), { pinned: isPinned('deposit', d.deposit) }]"
                 :title="gapTitle(d)"
-                @mouseenter="hover = d.deposit"
+                @mouseenter="hover = { type: 'deposit', name: d.deposit }"
+                @click="toggle('deposit', d.deposit)"
               >
                 <span class="bar-name">{{ d.deposit }}</span>
                 <span class="bar-track">
@@ -73,7 +110,7 @@
             </ul>
             <p class="loc-hint">
               Time between consecutive clusters of the deposit; hover a bar for the median.
-              {{ location ? '' : 'Averaged over the locations, weighted by the number of gaps.' }}
+              {{ scopeKeys ? '' : 'Averaged over the locations, weighted by the number of gaps.' }}
             </p>
           </section>
         </div>
@@ -97,20 +134,17 @@ const emit = defineEmits(['close'])
 
 const db = useDbStore()
 const results = useResultsStore()
-const { materialLocation: location } = storeToRefs(results) // kept in the store across tab switches
+// [{ type: 'location' | 'deposit', name }] kept highlighted, in the store so it survives tab switches
+const { materialSelection: selection } = storeToRefs(results)
 
 const locations = ref([]) // { key, system, gravity_well, region, share, presence, materialScans }
 const rows = ref([]) // this material's rows of the results table
+const scanRows = ref([]) // { capture_id, key, deposit, mass, resistance, instability } of the scans containing it
 const loading = ref(false)
 const error = ref(null)
-const hover = ref(null) // deposit under the pointer
+const hover = ref(null) // { type, name } under the pointer
 
 const num = (v) => (v == null ? null : Number(v))
-const selected = computed(() => locations.value.find((l) => l.key === location.value) ?? null)
-const subtitle = computed(() =>
-  selected.value ? `${locationName(selected.value)} · ${selected.value.system}` : 'All locations',
-)
-const locationLabel = computed(() => (selected.value ? ` at ${locationName(selected.value)}` : ''))
 const filterNote = computed(() => {
   const names = (list) => list.map((f) => (f.negated ? '!' : '') + f.value)
   const parts = [
@@ -121,25 +155,95 @@ const filterNote = computed(() => {
   return parts.length ? `Filtered by ${parts.join(', ')}` : ''
 })
 
-// The rows in scope: one location when picked, else all
-const scoped = computed(() =>
-  location.value ? rows.value.filter((r) => locationKey(r) === location.value) : rows.value,
-)
+// ── selection and hover ──────────────────────────────────────────
+// Clicked locations and deposits stay in focus; the item under the pointer is
+// added while it is there. Locations narrow what the deposit charts and the
+// figures cover (any of the focused locations); focused deposits narrow the
+// figures to their scans.
+const isPinned = (type, name) => selection.value.some((i) => i.type === type && i.name === name)
+const focus = computed(() => {
+  const h = hover.value
+  return h && !isPinned(h.type, h.name) ? [...selection.value, h] : selection.value
+})
+const focusNames = (type) => focus.value.filter((i) => i.type === type).map((i) => i.name)
+const focusLocations = computed(() => new Set(focusNames('location')))
+const focusDeposits = computed(() => new Set(focusNames('deposit')))
+const scopeKeys = computed(() => (focusLocations.value.size ? focusLocations.value : null))
 
-// One entry per deposit the material occurs in, over the scoped rows:
+function toggle(type, name) {
+  selection.value = isPinned(type, name)
+    ? selection.value.filter((i) => !(i.type === type && i.name === name))
+    : [...selection.value, { type, name }]
+}
+
+const locByKey = computed(() => new Map(locations.value.map((l) => [l.key, l])))
+const focusText = computed(() => {
+  const places = [...focusLocations.value].map((k) => locationName(locByKey.value.get(k) ?? { gravity_well: k }))
+  const deps = [...focusDeposits.value]
+  if (!places.length && !deps.length) return `All scans containing ${props.material}`
+  const parts = []
+  if (places.length) parts.push(`at ${places.join(', ')}`)
+  if (deps.length) parts.push(`in ${deps.join(', ')}`)
+  return `Scans containing ${props.material} ${parts.join(' ')}`
+})
+
+// ── figures ──────────────────────────────────────────────────────
+// Mass, resistance, instability and the scan count come from the scans; SCU from
+// the results rows (per scan the material is in). Both are narrowed the same way.
+function figures(keys, deposits) {
+  const scans = new Map()
+  for (const r of scanRows.value) {
+    if (keys && !keys.has(r.key)) continue
+    if (deposits?.size && !deposits.has(r.deposit)) continue
+    scans.set(r.capture_id, r)
+  }
+  const avg = (field) => {
+    const v = [...scans.values()].map((r) => r[field]).filter((x) => x != null).map(Number)
+    return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null
+  }
+  let present = 0
+  let scu = 0
+  for (const r of rows.value) {
+    if (keys && !keys.has(locationKey(r))) continue
+    if (deposits?.size && !deposits.has(r.deposit)) continue
+    present += num(r.material_scans) ?? 0
+    scu += num(r.total_scu) ?? 0
+  }
+  return {
+    scans: scans.size,
+    mass: avg('mass'),
+    resistance: avg('resistance'),
+    instability: avg('instability'),
+    scu: present ? scu / present : null,
+  }
+}
+
+// Top strip: all of the focused locations together, within the focused deposits
+const overall = computed(() => figures(scopeKeys.value, focusDeposits.value))
+
+// One row per location, each with its own figures (within the focused deposits)
+const locationRows = computed(() =>
+  locations.value.map((l) => ({ ...l, m: figures(new Set([l.key]), focusDeposits.value) })),
+)
+const maxShare = computed(() => Math.max(1, ...locations.value.map((l) => l.share)))
+
+// ── deposits and gaps ────────────────────────────────────────────
+// One entry per deposit the material occurs in, over the rows of the focused locations:
 //   share    — the material's share of the deposit (avg_share_pct weighted by the deposit's scans)
 //   presence — how many of the deposit's scans contain it
 //   gap      — time between clusters; the value is per location x deposit (repeated on each
 //              material row), so it is taken once per location and weighted by its gap count
-const deposits = computed(() => {
+const depositRows = computed(() => {
   const byDeposit = new Map()
-  for (const r of scoped.value) {
+  for (const r of rows.value) {
+    if (scopeKeys.value && !scopeKeys.value.has(locationKey(r))) continue
     let d = byDeposit.get(r.deposit)
-    if (!d) byDeposit.set(r.deposit, (d = { deposit: r.deposit, weighted: 0, scans: 0, hits: 0, gaps: new Map() }))
+    if (!d) byDeposit.set(r.deposit, (d = { deposit: r.deposit, weighted: 0, scans: 0, hits: 0, keys: new Set(), gaps: new Map() }))
     const w = num(r.composition_scans) ?? 0
     d.weighted += (num(r.avg_share_pct) ?? 0) * w
     d.scans += w
     d.hits += num(r.material_scans) ?? 0
+    d.keys.add(locationKey(r))
     if (num(r.deposit_cluster_gaps) && r.deposit_avg_cluster_gap_seconds != null) {
       d.gaps.set(locationKey(r), {
         n: num(r.deposit_cluster_gaps),
@@ -155,6 +259,7 @@ const deposits = computed(() => {
       return {
         deposit: d.deposit,
         scans: d.scans,
+        keys: d.keys,
         share: d.scans ? Math.round((d.weighted / d.scans) * 100) / 100 : 0,
         presence: d.scans ? Math.round((d.hits / d.scans) * 10000) / 100 : 0,
         gap: n
@@ -169,22 +274,27 @@ const deposits = computed(() => {
     })
     .sort((a, b) => b.share - a.share || a.deposit.localeCompare(b.deposit))
 })
+const maxDepositShare = computed(() => Math.max(1, ...depositRows.value.map((d) => d.share)))
+const maxGap = computed(() => Math.max(1, ...depositRows.value.map((d) => d.gap?.avg ?? 0)))
 
-const stats = computed(() => {
-  const r = scoped.value
-  const scans = selected.value
-    ? selected.value.materialScans
-    : locations.value.reduce((s, l) => s + l.materialScans, 0)
-  const present = r.reduce((s, x) => s + (num(x.material_scans) ?? 0), 0)
-  const scu = r.reduce((s, x) => s + (num(x.total_scu) ?? 0), 0)
-  return { scans, scu: present ? scu / present : null }
-})
-
-const maxShare = computed(() => Math.max(1, ...deposits.value.map((d) => d.share)))
-const maxGap = computed(() => Math.max(1, ...deposits.value.map((d) => d.gap?.avg ?? 0)))
-
-function rowClass(d) {
-  return hover.value ? (hover.value === d.deposit ? 'hi' : 'dim') : ''
+// ── highlighting ─────────────────────────────────────────────────
+// A focused location lights up the deposits it has this material in, and a focused
+// deposit the locations it is found at
+function locClass(l) {
+  if (!focus.value.length) return ''
+  const fl = focusLocations.value
+  const fd = focusDeposits.value
+  const hit =
+    (!fl.size || fl.has(l.key)) &&
+    (!fd.size || rows.value.some((r) => locationKey(r) === l.key && fd.has(r.deposit)))
+  return hit ? 'hi' : 'dim'
+}
+function depClass(d) {
+  if (!focus.value.length) return ''
+  const fd = focusDeposits.value
+  const fl = focusLocations.value
+  const hit = (!fd.size || fd.has(d.deposit)) && (!fl.size || [...fl].some((k) => d.keys.has(k)))
+  return hit ? 'hi' : 'dim'
 }
 function gapTitle(d) {
   if (!d.gap) return 'No gaps measured'
@@ -202,24 +312,36 @@ async function load() {
   try {
     const table = `results_${REGION_TABLE}`
     const columns = (await db.describeTable(table)).map((c) => c.column_name)
-    const [{ cells }, data] = await Promise.all([
+    const [{ cells }, data, scans] = await Promise.all([
       loadRegionConcentrations(db, results, columns),
       db.runQuery(
         `SELECT system, gravity_well, region, deposit, avg_share_pct, composition_scans, material_scans, total_scu,
                 deposit_cluster_gaps, deposit_avg_cluster_gap_seconds, deposit_median_cluster_gap_seconds
          FROM "${table}" WHERE material = ${q(props.material)} AND ${results.buildWhere(columns)}`,
       ),
+      // The scans containing the material, narrowed by the sidebar's location and deposit filters
+      db.runQuery(
+        `SELECT * FROM (
+           SELECT s.capture_id, s.system, s.gravity_well, s.region, s.deposit, s.mass, s.resistance, s.instability
+           FROM scans s JOIN compositions c ON s.capture_id = c.capture_id
+           WHERE c.type = ${q(props.material)}
+         ) WHERE ${results.buildWhere(['system', 'gravity_well', 'region', 'deposit'])}`,
+      ),
     ])
     const mine = cells.filter((c) => c.material === props.material)
     mine.sort((a, b) => b.share - a.share || locationName(a).localeCompare(locationName(b)))
     locations.value = mine
     rows.value = data
-    // A picked location that the filters removed is dropped
-    if (location.value && !mine.some((l) => l.key === location.value)) location.value = null
+    scanRows.value = scans.map((r) => ({ ...r, key: locationKey(r) }))
+    // Picks the filters removed are dropped
+    selection.value = selection.value.filter((i) =>
+      i.type === 'location' ? mine.some((l) => l.key === i.name) : data.some((r) => r.deposit === i.name),
+    )
   } catch (err) {
     error.value = err.message
     locations.value = []
     rows.value = []
+    scanRows.value = []
   } finally {
     loading.value = false
   }

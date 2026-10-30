@@ -986,3 +986,12 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 .loc-chart li { min-height: 26px; }
 .q-axis { height: 14px; margin-bottom: 2px; }
 .result-chip small { margin-left: 4px; opacity: 0.75; }
+
+/* Comparison table of a material's locations */
+.loc-compare tbody tr { cursor: pointer; }
+.loc-compare tbody tr.hi td { background: var(--bg-elevated); }
+.loc-compare tbody tr.dim { opacity: 0.3; }
+.loc-compare tbody tr.pinned td:first-child { box-shadow: inset 2px 0 0 var(--accent); font-weight: 600; }
+.loc-sub { color: var(--text-subtle); margin-left: 4px; }
+.loc-conc { display: flex; align-items: center; gap: 8px; min-width: 150px; }
+.loc-conc .bar-track { flex: 1; }

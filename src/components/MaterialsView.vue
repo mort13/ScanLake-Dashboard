@@ -80,7 +80,7 @@ const ignored = computed(
 )
 
 function open(card) {
-  results.materialLocation = null
+  results.materialSelection = []
   materialDetail.value = card.material
 }
 

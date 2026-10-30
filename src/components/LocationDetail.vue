@@ -16,8 +16,8 @@
 
         <div class="loc-stats">
           <div><strong>{{ stats.scans.toLocaleString() }}</strong><span>scans</span></div>
-          <div><strong>{{ deposits.length }}</strong><span>deposits</span></div>
-          <div><strong>{{ materials.length }}</strong><span>materials</span></div>
+          <div><strong>{{ deposits.length }}</strong><span>{{ deposits.length === 1 ? 'deposit' : 'deposits' }}</span></div>
+          <div><strong>{{ materials.length }}</strong><span>{{ materials.length === 1 ? 'material' : 'materials' }}</span></div>
           <div><strong>{{ formatCell(stats.mass) }}</strong><span>avg mass</span></div>
           <div><strong>{{ formatCell(stats.scu) }}</strong><span>avg SCU</span></div>
           <div><strong>{{ formatCell(stats.resistance) }}</strong><span>avg resistance</span></div>
