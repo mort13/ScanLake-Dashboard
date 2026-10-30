@@ -21,6 +21,9 @@ export const useResultsStore = defineStore('results', () => {
   const detail = ref(null) // { system, gravity_well, region } of the open location card
   const selection = ref([]) // [{ type: 'deposit' | 'material', name }] kept highlighted
   const qualityMode = ref('scu') // which quality band columns the detail shows
+  // Same for the Materials tab: the open material and the location picked inside it
+  const materialDetail = ref(null) // material name
+  const materialLocation = ref(null) // location key (see lib/regionData.js) or null for all
 
   const LOCATION_COLUMNS = ['gravity_well', 'system', 'region']
 
@@ -78,6 +81,8 @@ export const useResultsStore = defineStore('results', () => {
     detail,
     selection,
     qualityMode,
+    materialDetail,
+    materialLocation,
     unusedFilters,
     buildWhere,
   }

@@ -52,3 +52,10 @@ export function formatCell(v) {
   }
   return String(v)
 }
+
+/** Seconds as "45 s" or "2 min 05 s". */
+export function formatGap(seconds) {
+  if (seconds == null) return '–'
+  const s = Math.round(seconds)
+  return s < 120 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`
+}

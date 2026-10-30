@@ -133,7 +133,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDbStore } from '@/stores/db'
 import { useResultsStore } from '@/stores/results'
-import { formatCell } from '@/lib/results'
+import { formatCell, formatGap } from '@/lib/results'
 
 const TABLE = 'results_deposit_materials_by_region'
 // Quality bands of 100, as in the quality_<lo>_<hi>_pct columns
@@ -295,12 +295,6 @@ function peakBand(m) {
   return max > 0 ? BAND_LABELS[bands.indexOf(max)] : '–'
 }
 
-function formatGap(seconds) {
-  if (seconds == null) return '–'
-  const s = Math.round(seconds)
-  return s < 120 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`
-}
-
 // ── data ─────────────────────────────────────────────────────────
 const q = (s) => "'" + String(s).replace(/'/g, "''") + "'"
 
@@ -332,10 +326,11 @@ async function load() {
     )
     build(rows, listed)
     buildGaps()
-    // The scans at this place, one row per material, narrowed by the same deposit/material filters
+    // Picks that the new data no longer contains are dropped
     selection.value = selection.value.filter((i) =>
       i.type === 'deposit' ? depByName.value.has(i.name) : materials.value.some((m) => m.material === i.name),
     )
+    // The scans at this place, one row per material, narrowed by the same deposit/material filters
     scanRows.value = await db.runQuery(
       `SELECT * FROM (
          SELECT s.capture_id, s.deposit, c.type AS material, s.mass, s.resistance, s.instability

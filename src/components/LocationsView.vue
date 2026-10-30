@@ -102,6 +102,7 @@ import { useFiltersStore } from '@/stores/filters'
 import { useResultsStore } from '@/stores/results'
 import { selectList, metaLast, prettyName, formatCell } from '@/lib/results'
 import { rowsToCsv, downloadCsv } from '@/lib/csv'
+import { REGION_TABLE, loadRegionConcentrations, locationName } from '@/lib/regionData'
 import LocationDetail from '@/components/LocationDetail.vue'
 
 const PAGE_SIZE = 100
@@ -120,7 +121,7 @@ const cards = ref([]) // one per location, in card mode
 const { detail } = storeToRefs(results) // the card whose details are open (kept in the store)
 
 // This table is shown as one card per region instead of a grid
-const CARD_TABLE = 'deposit_materials_by_region'
+const CARD_TABLE = REGION_TABLE
 const cardMode = computed(() => results.active === CARD_TABLE)
 
 // The result tables that get a tab, in this order (highscores have their own page)
@@ -156,7 +157,7 @@ async function load() {
     schema.value = metaLast(await db.describeTable(`results_${name}`))
     const where = results.buildWhere(columns.value)
     if (name === CARD_TABLE) {
-      await loadCards(where)
+      await loadCards()
       return
     }
     cards.value = []
@@ -175,50 +176,19 @@ async function load() {
   }
 }
 
-/**
- * Groups the by-region rows into one card per location. A material's
- * concentration is its average share over all scans at the location: each
- * deposit's avg_share_pct weighted by that deposit's scans, divided by the
- * scans of every deposit there (so deposits without the material count as 0).
- * The material filter only selects what is listed; it doesn't change the maths.
- */
-async function loadCards(where) {
-  const table = `"results_${CARD_TABLE}"`
-  const whereAll = results.buildWhere(columns.value, ['material'])
-  const loc = 'system, gravity_well, region'
-  const [data, denoms] = await Promise.all([
-    db.runQuery(
-      `SELECT ${loc}, material, sum(avg_share_pct * composition_scans) AS weighted,
-              sum(material_scans) AS material_scans
-       FROM ${table} WHERE ${where} GROUP BY ${loc}, material`,
-    ),
-    db.runQuery(
-      `SELECT ${loc}, sum(scans) AS scans, max(location_scans) AS location_scans FROM (
-         SELECT ${loc}, deposit, max(composition_scans) AS scans, max(location_scans) AS location_scans
-         FROM ${table} WHERE ${whereAll} GROUP BY ${loc}, deposit
-       ) GROUP BY ${loc}`,
-    ),
-  ])
-  const key = (r) => [r.system, r.gravity_well, r.region].join('|')
-  const byLoc = new Map(
-    denoms.map((d) => [key(d), { ...d, key: key(d), scans: Number(d.scans), materials: [] }]),
-  )
-  for (const r of data) {
-    const card = byLoc.get(key(r))
-    if (!card || !card.scans) continue
-    card.materials.push({
-      material: r.material,
-      share: Math.round((Number(r.weighted) / card.scans) * 100) / 100,
-      presence: Math.round((Number(r.material_scans) / card.scans) * 10000) / 100,
-    })
+/** One card per location, its materials ordered by concentration. */
+async function loadCards() {
+  const { locations, cells } = await loadRegionConcentrations(db, results, columns.value)
+  const byLoc = new Map([...locations].map(([key, l]) => [key, { ...l, materials: [] }]))
+  for (const c of cells) {
+    byLoc.get(c.key)?.materials.push({ material: c.material, share: c.share, presence: c.presence })
   }
-  for (const c of byLoc.values()) {
-    c.materials.sort((a, b) => b.share - a.share || a.material.localeCompare(b.material))
-    c.scans = Number(c.location_scans ?? c.scans)
+  for (const card of byLoc.values()) {
+    card.materials.sort((a, b) => b.share - a.share || a.material.localeCompare(b.material))
   }
   cards.value = [...byLoc.values()]
     .filter((c) => c.materials.length)
-    .sort((a, b) => b.scans - a.scans || (a.region ?? a.gravity_well).localeCompare(b.region ?? b.gravity_well))
+    .sort((a, b) => b.scans - a.scans || locationName(a).localeCompare(locationName(b)))
   total.value = cards.value.length
   rows.value = cards.value // keeps the empty-state check working
 }

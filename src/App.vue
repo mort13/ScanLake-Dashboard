@@ -4,7 +4,7 @@
     <SessionTicker />
 
     <div class="app-body">
-      <FilterSidebar v-show="view !== 'highscores'" :scope="view === 'results' ? 'results' : 'dashboard'" @apply="onFiltersApply" />
+      <FilterSidebar v-show="view !== 'highscores'" :scope="view === 'locations' || view === 'materials' ? 'results' : 'dashboard'" @apply="onFiltersApply" />
       <main class="dashboard-main">
         <div v-if="db.status === 'idle' || db.status === 'initializing' || db.status === 'loading'" class="loading-overlay">
           <span class="spinner lg" />
@@ -20,7 +20,8 @@
         <template v-else>
           <!-- Kept mounted while hidden: the grid and its charts size themselves to the page -->
           <DashboardGrid v-show="view === 'dashboard'" />
-          <ResultsView v-if="view === 'results'" />
+          <LocationsView v-if="view === 'locations'" />
+          <MaterialsView v-else-if="view === 'materials'" />
           <HighscoresView v-else-if="view === 'highscores'" />
         </template>
       </main>
@@ -41,11 +42,12 @@ import AppHeader from '@/components/AppHeader.vue'
 import SessionTicker from '@/components/SessionTicker.vue'
 import FilterSidebar from '@/components/FilterSidebar.vue'
 import DashboardGrid from '@/components/DashboardGrid.vue'
-import ResultsView from '@/components/ResultsView.vue'
+import LocationsView from '@/components/LocationsView.vue'
+import MaterialsView from '@/components/MaterialsView.vue'
 import HighscoresView from '@/components/HighscoresView.vue'
 import QueryEditor from '@/components/QueryEditor.vue'
 
-const VIEWS = ['results', 'dashboard', 'highscores']
+const VIEWS = ['locations', 'materials', 'dashboard', 'highscores']
 const DEFAULT_VIEW = VIEWS[0]
 
 const db = useDbStore()

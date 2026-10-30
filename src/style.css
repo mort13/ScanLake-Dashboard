@@ -985,3 +985,4 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 .loc-chart h3 { display: flex; align-items: center; min-height: 24px; }
 .loc-chart li { min-height: 26px; }
 .q-axis { height: 14px; margin-bottom: 2px; }
+.result-chip small { margin-left: 4px; opacity: 0.75; }

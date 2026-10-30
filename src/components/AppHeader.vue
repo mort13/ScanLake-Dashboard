@@ -84,11 +84,12 @@ const auth = useAuthStore()
 const emit = defineEmits(['openQuery', 'addPanel', 'update:view'])
 
 defineProps({
-  view: { type: String, default: 'results' },
+  view: { type: String, default: 'locations' },
 })
 
 const TABS = [
-  { id: 'results', label: 'Results' },
+  { id: 'locations', label: 'Locations' },
+  { id: 'materials', label: 'Materials' },
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'highscores', label: 'Highscores' },
 ]
