@@ -34,34 +34,30 @@
       No result tables were published yet.
     </div>
     <div v-else-if="rows.length === 0 && !loading" class="no-results">No rows match the filters.</div>
-    <div v-else-if="cardMode" class="well-groups">
-      <section v-for="group in groups" :key="group.key" class="well-group">
-        <h3 v-if="results.groupByWell" class="well-head">{{ group.gravity_well }}<small>{{ group.system }}</small></h3>
-        <div class="region-grid">
-          <section
-            v-for="card in group.cards"
-            :key="card.key"
-            class="region-card"
-            role="button"
-            tabindex="0"
-            title="Show details"
-            @click="openDetail(card)"
-            @keydown.enter="openDetail(card)"
-          >
-            <header class="region-head">
-              <h3>{{ card.region ?? card.gravity_well }}</h3>
-              <p>{{ card.region ? `${card.system} · ${card.gravity_well}` : card.system }}</p>
-            </header>
-            <ol class="region-materials" :class="{ 'by-gap': results.cardMetric === 'gap' }">
-              <li v-for="m in card.materials" :key="m.material" :title="rowTitle(m)">
-                <span class="mat-name">{{ m.material }}</span>
-                <span class="mat-bar"><span :style="{ width: m.pct + '%' }" /></span>
-                <span class="mat-share">{{ metricText(m, results.cardMetric) }}</span>
-              </li>
-            </ol>
-            <footer class="region-foot">{{ card.scans.toLocaleString() }} scans · {{ card.materials.length }} materials</footer>
-          </section>
-        </div>
+    <div v-else-if="cardMode" class="region-grid">
+      <section
+        v-for="card in shownCards"
+        :key="card.key"
+        class="region-card"
+        :class="{ static: results.groupByWell }"
+        :role="results.groupByWell ? undefined : 'button'"
+        :tabindex="results.groupByWell ? undefined : 0"
+        :title="results.groupByWell ? 'All regions of the gravity well combined' : 'Show details'"
+        @click="openDetail(card)"
+        @keydown.enter="openDetail(card)"
+      >
+        <header class="region-head">
+          <h3>{{ card.region ?? card.gravity_well }}</h3>
+          <p>{{ card.region ? `${card.system} · ${card.gravity_well}` : card.system }}</p>
+        </header>
+        <ol class="region-materials" :class="{ 'by-gap': results.cardMetric === 'gap' }">
+          <li v-for="m in card.materials" :key="m.material" :title="rowTitle(m)">
+            <span class="mat-name">{{ m.material }}</span>
+            <span class="mat-bar"><span :style="{ width: m.pct + '%' }" /></span>
+            <span class="mat-share">{{ metricText(m, results.cardMetric) }}</span>
+          </li>
+        </ol>
+        <footer class="region-foot">{{ card.scans.toLocaleString() }} scans · {{ card.materials.length }} materials</footer>
       </section>
     </div>
     <div v-else class="table-scroll results-table-wrap">
@@ -109,7 +105,7 @@ import { useResultsStore } from '@/stores/results'
 import { selectList, metaLast, prettyName, formatCell } from '@/lib/results'
 import { rowsToCsv, downloadCsv } from '@/lib/csv'
 import {
-  REGION_TABLE, loadRegionConcentrations, locationName, sortByMetric, metricText, barScale, groupItemsByWell,
+  REGION_TABLE, loadRegionConcentrations, locationName, sortByMetric, metricText, barScale,
 } from '@/lib/regionData'
 import LocationDetail from '@/components/LocationDetail.vue'
 import CardOptions from '@/components/CardOptions.vue'
@@ -187,7 +183,7 @@ async function load() {
 
 /** One card per location. */
 async function loadCards() {
-  const { locations, cells } = await loadRegionConcentrations(db, results, columns.value)
+  const { locations, cells } = await loadRegionConcentrations(db, results, columns.value, { byWell: results.groupByWell })
   const byLoc = new Map([...locations].map(([key, l]) => [key, { ...l, materials: [] }]))
   for (const c of cells) {
     byLoc.get(c.key)?.materials.push({ material: c.material, share: c.share, presence: c.presence, gap: c.gap })
@@ -199,7 +195,7 @@ async function loadCards() {
   rows.value = cards.value // keeps the empty-state check working
 }
 
-// The cards as shown: materials ordered by the chosen figure, optionally grouped by gravity well
+// The cards as shown: materials ordered by the chosen figure
 const shownCards = computed(() =>
   cards.value.map((card) => {
     const sorted = sortByMetric(card.materials, results.cardMetric, (m) => m.material)
@@ -207,12 +203,6 @@ const shownCards = computed(() =>
     return { ...card, materials: sorted.map((m) => ({ ...m, pct: pct(m) })) }
   }),
 )
-const groups = computed(() =>
-  results.groupByWell
-    ? groupItemsByWell(shownCards.value).map((g) => ({ ...g, cards: g.items }))
-    : [{ key: 'all', cards: shownCards.value }],
-)
-
 function rowTitle(m) {
   return results.cardMetric === 'gap'
     ? m.gap ? `Average over ${m.gap.n} ${m.gap.n === 1 ? 'gap' : 'gaps'}` : 'No gaps measured'
@@ -220,6 +210,7 @@ function rowTitle(m) {
 }
 
 function openDetail(card) {
+  if (results.groupByWell) return // a gravity well combines regions; there is no detail page for it
   results.selection = []
   detail.value = card
 }
@@ -261,7 +252,7 @@ watch(() => results.active, () => {
   load()
 })
 watch(
-  () => [results.locationFilters, results.depositFilters, results.materialFilters],
+  () => [results.locationFilters, results.depositFilters, results.materialFilters, results.groupByWell],
   () => {
     page.value = 0
     load()

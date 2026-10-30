@@ -20,29 +20,33 @@ export const locationName = (l) => l.region ?? l.gravity_well
  * @param db       the db store
  * @param results  the results store (its filters become the WHERE clause)
  * @param columns  column names of the results table
+ * @param options  `byWell`: combine the regions of each gravity well into one location (region is null)
  * @returns {{
  *   locations: Map<string, {key, system, gravity_well, region, scans: number}>,
  *   cells: {key, system, gravity_well, region, material, share: number, presence: number, materialScans: number, rocks: number, gap: {avg: number, n: number} | null}[],
  * }}
  *   `cells` has one entry per location x material; `scans` of a location is its total scan count.
  */
-export async function loadRegionConcentrations(db, results, columns) {
+export async function loadRegionConcentrations(db, results, columns, { byWell = false } = {}) {
   const table = `"results_${REGION_TABLE}"`
   const where = results.buildWhere(columns)
   const whereAll = results.buildWhere(columns, ['material'])
-  const loc = 'system, gravity_well, region'
+  const loc = byWell ? 'system, gravity_well' : 'system, gravity_well, region'
+  const sel = byWell ? 'system, gravity_well, NULL AS region' : loc
   const [data, denoms] = await Promise.all([
     db.runQuery(
-      `SELECT ${loc}, material, sum(avg_share_pct * composition_scans) AS weighted,
+      `SELECT ${sel}, material, sum(avg_share_pct * composition_scans) AS weighted,
               sum(material_scans) AS material_scans,
               sum(deposit_avg_cluster_gap_seconds * deposit_cluster_gaps) AS gap_sum,
               sum(CASE WHEN deposit_avg_cluster_gap_seconds IS NOT NULL THEN deposit_cluster_gaps END) AS gap_n
        FROM ${table} WHERE material IS NOT NULL AND ${where} GROUP BY ${loc}, material`,
     ),
     db.runQuery(
-      `SELECT ${loc}, sum(scans) AS scans, max(location_scans) AS location_scans FROM (
-         SELECT ${loc}, deposit, max(composition_scans) AS scans, max(location_scans) AS location_scans
-         FROM ${table} WHERE ${whereAll} GROUP BY ${loc}, deposit
+      `SELECT ${sel}, sum(scans) AS scans, sum(location_scans) AS location_scans FROM (
+         SELECT system, gravity_well, region, sum(scans) AS scans, max(location_scans) AS location_scans FROM (
+           SELECT system, gravity_well, region, deposit, max(composition_scans) AS scans, max(location_scans) AS location_scans
+           FROM ${table} WHERE ${whereAll} GROUP BY system, gravity_well, region, deposit
+         ) GROUP BY system, gravity_well, region
        ) GROUP BY ${loc}`,
     ),
   ])
@@ -104,15 +108,4 @@ export function barScale(items, metric) {
   if (metric !== 'gap') return (i) => Math.min(100, i.share)
   const max = Math.max(0, ...items.map((i) => i.gap?.avg ?? 0))
   return (i) => (i.gap && max ? (i.gap.avg / max) * 100 : 0)
-}
-
-/** Groups items by gravity well, in the order each well first appears. */
-export function groupItemsByWell(items) {
-  const groups = new Map()
-  for (const i of items) {
-    const key = `${i.system}|${i.gravity_well}`
-    if (!groups.has(key)) groups.set(key, { key, system: i.system, gravity_well: i.gravity_well, items: [] })
-    groups.get(key).items.push(i)
-  }
-  return [...groups.values()]
 }
