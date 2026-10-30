@@ -909,6 +909,23 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 .mat-bar > span { display: block; height: 100%; background: var(--accent); }
 .mat-share { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-muted); }
 .region-foot { margin-top: 6px; font-size: 11px; color: var(--text-subtle); }
+.region-materials.by-gap li { grid-template-columns: minmax(0, 1fr) 40px 76px; }
+.region-materials li.well-sep {
+  display: block;
+  padding: 6px 0 2px;
+  font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--text-subtle);
+}
+.region-materials li.well-sep:first-child { padding-top: 0; border-top: none; }
+.card-options { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.card-options .result-tabs { gap: 4px; }
+.well-groups { display: flex; flex-direction: column; gap: 22px; }
+.well-head {
+  margin-bottom: 8px; padding-bottom: 4px;
+  font-size: 13px; font-weight: 600;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.well-head small { margin-left: 8px; font-size: 11px; font-weight: 400; color: var(--text-muted); }
 
 /* ── Location detail ───────────────────────────────────────────── */
 .loc-head { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }

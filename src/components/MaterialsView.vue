@@ -11,12 +11,14 @@
         <span v-else-if="error" class="panel-error">{{ error }}</span>
         <span v-else-if="ignored" class="meta-note">Quality and date filters don't apply to these results.</span>
         <span v-else class="meta-count">{{ cards.length.toLocaleString() }} {{ cards.length === 1 ? 'material' : 'materials' }}</span>
+        <span class="meta-spacer" />
+        <CardOptions />
       </div>
 
       <div v-if="cards.length === 0 && !loading" class="no-results">No materials match the filters.</div>
       <div v-else class="region-grid">
         <section
-          v-for="card in cards"
+          v-for="card in shownCards"
           :key="card.material"
           class="region-card"
           role="button"
@@ -29,16 +31,15 @@
             <h3>{{ card.material }}</h3>
             <p>{{ card.locations.length }} {{ card.locations.length === 1 ? 'location' : 'locations' }}</p>
           </header>
-          <ol class="region-materials">
-            <li
-              v-for="l in card.locations"
-              :key="l.key"
-              :title="`${l.system} · ${l.gravity_well} · present in ${formatCell(l.presence)}% of scans there`"
-            >
-              <span class="mat-name">{{ locationName(l) }}</span>
-              <span class="mat-bar"><span :style="{ width: Math.min(100, l.share) + '%' }" /></span>
-              <span class="mat-share">{{ formatCell(l.share) }}%</span>
-            </li>
+          <ol class="region-materials" :class="{ 'by-gap': results.cardMetric === 'gap' }">
+            <template v-for="row in card.rows" :key="row.key">
+              <li v-if="row.head" class="well-sep">{{ row.head }}</li>
+              <li v-else :title="rowTitle(row.loc)">
+                <span class="mat-name">{{ locationName(row.loc) }}</span>
+                <span class="mat-bar"><span :style="{ width: row.loc.pct + '%' }" /></span>
+                <span class="mat-share">{{ metricText(row.loc, results.cardMetric) }}</span>
+              </li>
+            </template>
           </ol>
           <footer class="region-foot">{{ card.scans.toLocaleString() }} scans contain it</footer>
         </section>
@@ -54,15 +55,18 @@ import { useDbStore } from '@/stores/db'
 import { useFiltersStore } from '@/stores/filters'
 import { useResultsStore } from '@/stores/results'
 import { formatCell } from '@/lib/results'
-import { REGION_TABLE, loadRegionConcentrations, locationName } from '@/lib/regionData'
+import {
+  REGION_TABLE, loadRegionConcentrations, locationName, sortByMetric, metricText, barScale, groupItemsByWell,
+} from '@/lib/regionData'
 import MaterialDetail from '@/components/MaterialDetail.vue'
+import CardOptions from '@/components/CardOptions.vue'
 
 const db = useDbStore()
 const filters = useFiltersStore()
 const results = useResultsStore()
 const { materialDetail } = storeToRefs(results) // the open material (kept in the store)
 
-const cards = ref([]) // { material, scans, locations: [{ key, system, gravity_well, region, share, presence }] }
+const cards = ref([]) // { material, scans, locations: [{ key, system, gravity_well, region, share, presence, gap }] }
 const columns = ref([])
 const loading = ref(false)
 const error = ref(null)
@@ -79,12 +83,34 @@ const ignored = computed(
     filters.dateRange[1] !== null,
 )
 
+// The cards as shown: locations ordered by the chosen figure, optionally under a heading per gravity well
+const shownCards = computed(() =>
+  cards.value.map((card) => {
+    const sorted = sortByMetric(card.locations, results.cardMetric, locationName)
+    const pct = barScale(sorted, results.cardMetric)
+    const locs = sorted.map((l) => ({ ...l, pct: pct(l) }))
+    const rows = results.groupByWell
+      ? groupItemsByWell(locs).flatMap((g) => [
+          { key: 'head|' + g.key, head: g.gravity_well },
+          ...g.items.map((loc) => ({ key: loc.key, loc })),
+        ])
+      : locs.map((loc) => ({ key: loc.key, loc }))
+    return { ...card, rows }
+  }),
+)
+
+function rowTitle(l) {
+  return results.cardMetric === 'gap'
+    ? `${l.system} · ${l.gravity_well} · ${l.gap ? `average over ${l.gap.n} ${l.gap.n === 1 ? 'gap' : 'gaps'}` : 'no gaps measured'}`
+    : `${l.system} · ${l.gravity_well} · present in ${formatCell(l.presence)}% of scans there`
+}
+
 function open(card) {
   results.materialSelection = []
   materialDetail.value = card.material
 }
 
-/** One card per material, its locations ordered by concentration. */
+/** One card per material. */
 async function load() {
   if (!db.isReady || !db.resultTables.includes(REGION_TABLE)) return
   loading.value = true
@@ -98,9 +124,6 @@ async function load() {
       if (!card) byMaterial.set(c.material, (card = { material: c.material, scans: 0, locations: [] }))
       card.scans += c.materialScans
       card.locations.push(c)
-    }
-    for (const card of byMaterial.values()) {
-      card.locations.sort((a, b) => b.share - a.share || locationName(a).localeCompare(locationName(b)))
     }
     cards.value = [...byMaterial.values()].sort(
       (a, b) => b.scans - a.scans || a.material.localeCompare(b.material),

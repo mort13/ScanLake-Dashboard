@@ -1,5 +1,7 @@
 /** Reads of results_deposit_materials_by_region shared by the Locations and Materials tabs. */
 
+import { formatCell, formatGap } from '@/lib/results'
+
 export const REGION_TABLE = 'deposit_materials_by_region'
 
 /** Stable id of a location: system, gravity well and (possibly missing) region. */
@@ -20,7 +22,7 @@ export const locationName = (l) => l.region ?? l.gravity_well
  * @param columns  column names of the results table
  * @returns {{
  *   locations: Map<string, {key, system, gravity_well, region, scans: number}>,
- *   cells: {key, system, gravity_well, region, material, share: number, presence: number, materialScans: number, rocks: number}[],
+ *   cells: {key, system, gravity_well, region, material, share: number, presence: number, materialScans: number, rocks: number, gap: {avg: number, n: number} | null}[],
  * }}
  *   `cells` has one entry per location x material; `scans` of a location is its total scan count.
  */
@@ -32,7 +34,9 @@ export async function loadRegionConcentrations(db, results, columns) {
   const [data, denoms] = await Promise.all([
     db.runQuery(
       `SELECT ${loc}, material, sum(avg_share_pct * composition_scans) AS weighted,
-              sum(material_scans) AS material_scans
+              sum(material_scans) AS material_scans,
+              sum(deposit_avg_cluster_gap_seconds * deposit_cluster_gaps) AS gap_sum,
+              sum(CASE WHEN deposit_avg_cluster_gap_seconds IS NOT NULL THEN deposit_cluster_gaps END) AS gap_n
        FROM ${table} WHERE material IS NOT NULL AND ${where} GROUP BY ${loc}, material`,
     ),
     db.runQuery(
@@ -72,7 +76,43 @@ export async function loadRegionConcentrations(db, results, columns) {
       presence: Math.round((Number(r.material_scans) / denom) * 10000) / 100,
       materialScans: Number(r.material_scans),
       rocks: denom, // rocks scanned at the location (the denominator of share)
+      // Time between clusters of the deposits holding the material, weighted by the gaps each is based on
+      gap: Number(r.gap_n) > 0 ? { avg: Number(r.gap_sum) / Number(r.gap_n), n: Number(r.gap_n) } : null,
     })
   }
   return { locations, cells }
+}
+
+/** Orders card rows by concentration, or by time between clusters (shortest first, unknown last). */
+export function sortByMetric(items, metric, name) {
+  const gap = (i) => i.gap?.avg ?? Infinity
+  return [...items].sort(
+    (a, b) =>
+      (metric === 'gap' && gap(a) !== gap(b) ? gap(a) - gap(b) : 0) ||
+      b.share - a.share ||
+      name(a).localeCompare(name(b)),
+  )
+}
+
+/** The figure a card row shows. */
+export function metricText(item, metric) {
+  return metric === 'gap' ? formatGap(item.gap?.avg ?? null) : `${formatCell(item.share)}%`
+}
+
+/** Bar length in percent per row; time between clusters is scaled to the longest in `items`. */
+export function barScale(items, metric) {
+  if (metric !== 'gap') return (i) => Math.min(100, i.share)
+  const max = Math.max(0, ...items.map((i) => i.gap?.avg ?? 0))
+  return (i) => (i.gap && max ? (i.gap.avg / max) * 100 : 0)
+}
+
+/** Groups items by gravity well, in the order each well first appears. */
+export function groupItemsByWell(items) {
+  const groups = new Map()
+  for (const i of items) {
+    const key = `${i.system}|${i.gravity_well}`
+    if (!groups.has(key)) groups.set(key, { key, system: i.system, gravity_well: i.gravity_well, items: [] })
+    groups.get(key).items.push(i)
+  }
+  return [...groups.values()]
 }

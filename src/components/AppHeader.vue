@@ -90,7 +90,7 @@ defineProps({
 const TABS = [
   { id: 'locations', label: 'Locations' },
   { id: 'materials', label: 'Materials' },
-  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'dashboard', label: 'Statistics' },
   { id: 'highscores', label: 'Highscores' },
 ]
 

@@ -23,6 +23,9 @@ export const useResultsStore = defineStore('results', () => {
   const qualityMode = ref('scu') // which quality band columns the detail shows
   // Same for the Materials tab: the open material and what is picked inside it
   const materialDetail = ref(null) // material name
+  // How the overview cards of both tabs are shown
+  const cardMetric = ref('share') // 'share' (concentration) | 'gap' (time between clusters)
+  const groupByWell = ref(false) // group the locations by gravity well
   const materialSelection = ref([]) // [{ type: 'location' | 'deposit', name }]; a location's name is its key (lib/regionData.js)
 
   const LOCATION_COLUMNS = ['gravity_well', 'system', 'region']
@@ -83,6 +86,8 @@ export const useResultsStore = defineStore('results', () => {
     qualityMode,
     materialDetail,
     materialSelection,
+    cardMetric,
+    groupByWell,
     unusedFilters,
     buildWhere,
   }
