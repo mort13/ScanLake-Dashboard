@@ -19,7 +19,7 @@
           <div><strong>{{ depositRows.length }}</strong><span>{{ depositRows.length === 1 ? 'deposit' : 'deposits' }}</span></div>
           <div><strong>{{ overall.scans.toLocaleString() }}</strong><span>scans contain it</span></div>
           <div><strong>{{ formatCell(overall.mass) }}</strong><span>avg mass</span></div>
-          <div><strong>{{ formatCell(overall.scu) }}</strong><span>avg SCU</span></div>
+          <div :title="`Average SCU of ${material} in a rock; rocks without it count as 0`"><strong>{{ formatCell(overall.scu) }}</strong><span>avg SCU</span></div>
           <div><strong>{{ formatCell(overall.resistance) }}</strong><span>avg resistance</span></div>
           <div><strong>{{ formatCell(overall.instability) }}</strong><span>avg instability</span></div>
         </div>
@@ -34,18 +34,22 @@
             <table class="result-table loc-table loc-compare" @mouseleave="hover = null">
               <thead>
                 <tr>
-                  <th>location</th>
-                  <th>concentration</th>
-                  <th>scans</th>
-                  <th>avg mass</th>
-                  <th>avg SCU</th>
-                  <th>avg resistance</th>
-                  <th>avg instability</th>
+                  <th
+                    v-for="c in COLUMNS"
+                    :key="c.key"
+                    class="sortable"
+                    :class="{ sorted: sort.column === c.key }"
+                    :title="c.title"
+                    @click="toggleSort(c.key)"
+                  >
+                    {{ c.label }}
+                    <span class="sort-arrow">{{ sort.column === c.key ? (sort.desc ? '▼' : '▲') : '' }}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 <tr
-                  v-for="l in locationRows"
+                  v-for="l in sortedLocationRows"
                   :key="l.key"
                   :class="[locClass(l), { pinned: isPinned('location', l.key) }]"
                   :title="`${l.system} · ${l.gravity_well} · present in ${formatCell(l.presence)}% of scans there`"
@@ -64,11 +68,60 @@
                   <td class="num">{{ formatCell(l.m.scu) }}</td>
                   <td class="num">{{ formatCell(l.m.resistance) }}</td>
                   <td class="num">{{ formatCell(l.m.instability) }}</td>
+                  <td class="num" :title="l.m.gap ? `${l.m.gap.n} ${l.m.gap.n === 1 ? 'gap' : 'gaps'}` : 'No gaps measured'">
+                    {{ l.m.gap ? formatGap(l.m.gap.avg) : '–' }}
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <p class="loc-hint">Click locations to keep them highlighted and compare; the charts below follow the selection.</p>
+          <p class="loc-hint">Click locations to keep them highlighted and compare, or a column name to sort; the charts below follow the selection.</p>
+        </section>
+
+        <section v-if="entries.length" class="loc-chart">
+          <h3>
+            Quality by entry
+            <span class="q-mode">
+              <button :class="{ active: qualityMode === 'scu' }" @click="qualityMode = 'scu'">by SCU</button>
+              <button :class="{ active: qualityMode === 'count' }" @click="qualityMode = 'count'">by count</button>
+            </span>
+          </h3>
+          <div class="entry-legend" @mouseleave="hoverEntry = null">
+            <span
+              v-for="e in entries"
+              :key="e.entry"
+              class="entry-key"
+              :class="{ dim: hoverEntry != null && hoverEntry !== e.entry }"
+              @mouseenter="hoverEntry = e.entry"
+            >
+              <i :style="{ background: entryColor(e.entry) }" />
+              Entry {{ e.entry }}
+              <small>{{ formatCell(e.scuPerRock) }} SCU when present · {{ e.scans.toLocaleString() }} scans</small>
+            </span>
+          </div>
+          <div class="entry-chart" @mouseleave="hoverEntry = null">
+            <div v-for="(label, i) in BAND_LABELS" :key="label" class="entry-group">
+              <div class="entry-bars">
+                <div
+                  v-for="e in entries"
+                  :key="e.entry"
+                  class="entry-bar"
+                  :class="{ dim: hoverEntry != null && hoverEntry !== e.entry }"
+                  :title="`Entry ${e.entry}, ${label}: ${formatCell(e.bands[i])}%`"
+                  @mouseenter="hoverEntry = e.entry"
+                >
+                  <span v-if="e.bands[i] >= 5" class="entry-val">{{ Math.round(e.bands[i]) }}</span>
+                  <span class="entry-fill" :style="{ height: (e.bands[i] / entryMax) * 100 + '%', background: entryColor(e.entry) }" />
+                </div>
+              </div>
+              <span class="entry-label">{{ label.split('–')[0] }}</span>
+            </div>
+          </div>
+          <p class="loc-hint">
+            Share of each entry's {{ qualityMode === 'scu' ? 'SCU' : 'scans' }} per quality band (0 to {{ entryMax }}%).
+            A material can appear more than once in a rock, for example as a bulk entry and a small higher
+            quality one; each entry gets its own colour. Entries are combined across the selected locations and deposits.
+          </p>
         </section>
 
         <div class="loc-charts">
@@ -124,7 +177,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDbStore } from '@/stores/db'
 import { useResultsStore } from '@/stores/results'
-import { formatCell, formatGap } from '@/lib/results'
+import { formatCell, formatGap, BAND_LABELS, BAND_COLUMNS } from '@/lib/results'
 import { REGION_TABLE, loadRegionConcentrations, locationKey, locationName } from '@/lib/regionData'
 
 const props = defineProps({
@@ -135,7 +188,7 @@ const emit = defineEmits(['close'])
 const db = useDbStore()
 const results = useResultsStore()
 // [{ type: 'location' | 'deposit', name }] kept highlighted, in the store so it survives tab switches
-const { materialSelection: selection } = storeToRefs(results)
+const { materialSelection: selection, qualityMode } = storeToRefs(results)
 
 const locations = ref([]) // { key, system, gravity_well, region, share, presence, materialScans }
 const rows = ref([]) // this material's rows of the results table
@@ -143,6 +196,8 @@ const scanRows = ref([]) // { capture_id, key, deposit, mass, resistance, instab
 const loading = ref(false)
 const error = ref(null)
 const hover = ref(null) // { type, name } under the pointer
+const entryRows = ref([]) // this material's rows of the entries table (one per location x deposit x entry)
+const hoverEntry = ref(null) // entry index under the pointer in the quality chart
 
 const num = (v) => (v == null ? null : Number(v))
 const filterNote = computed(() => {
@@ -188,8 +243,10 @@ const focusText = computed(() => {
 })
 
 // ── figures ──────────────────────────────────────────────────────
-// Mass, resistance, instability and the scan count come from the scans; SCU from
-// the results rows (per scan the material is in). Both are narrowed the same way.
+// Mass, resistance, instability and the scan count come from the scans; SCU from the
+// results rows: the material's SCU in a rock there, i.e. its total SCU over the rocks
+// scanned (rocks without it count as 0). Both are narrowed the same way. With deposits
+// in focus the rocks are those deposits' scans, else all rocks scanned at the locations.
 function figures(keys, deposits) {
   const scans = new Map()
   for (const r of scanRows.value) {
@@ -201,20 +258,37 @@ function figures(keys, deposits) {
     const v = [...scans.values()].map((r) => r[field]).filter((x) => x != null).map(Number)
     return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null
   }
-  let present = 0
+  let rocks = 0
   let scu = 0
+  let gapSum = 0
+  let gapN = 0
+  const seen = new Set()
   for (const r of rows.value) {
     if (keys && !keys.has(locationKey(r))) continue
     if (deposits?.size && !deposits.has(r.deposit)) continue
-    present += num(r.material_scans) ?? 0
     scu += num(r.total_scu) ?? 0
+    // Time between clusters of the deposit, weighted by how many gaps it is based on
+    const n = num(r.deposit_cluster_gaps)
+    if (n && r.deposit_avg_cluster_gap_seconds != null) {
+      gapSum += num(r.deposit_avg_cluster_gap_seconds) * n
+      gapN += n
+    }
+    const id = locationKey(r) + '|' + r.deposit // composition_scans repeats on each material row
+    if (deposits?.size && !seen.has(id)) {
+      seen.add(id)
+      rocks += num(r.composition_scans) ?? 0
+    }
+  }
+  if (!deposits?.size) {
+    rocks = locations.value.filter((l) => !keys || keys.has(l.key)).reduce((s, l) => s + l.rocks, 0)
   }
   return {
     scans: scans.size,
     mass: avg('mass'),
     resistance: avg('resistance'),
     instability: avg('instability'),
-    scu: present ? scu / present : null,
+    scu: rocks ? scu / rocks : null,
+    gap: gapN ? { avg: gapSum / gapN, n: gapN } : null,
   }
 }
 
@@ -225,6 +299,37 @@ const overall = computed(() => figures(scopeKeys.value, focusDeposits.value))
 const locationRows = computed(() =>
   locations.value.map((l) => ({ ...l, m: figures(new Set([l.key]), focusDeposits.value) })),
 )
+// Columns of the table; clicking a name sorts by it (ascending, descending, then back to concentration order)
+const COLUMNS = [
+  { key: 'name', label: 'location' },
+  { key: 'share', label: 'concentration' },
+  { key: 'scans', label: 'scans' },
+  { key: 'mass', label: 'avg mass' },
+  { key: 'scu', label: 'avg SCU', title: 'Average SCU of this material in a rock at the location' },
+  { key: 'resistance', label: 'avg resistance' },
+  { key: 'instability', label: 'avg instability' },
+  { key: 'gap', label: 'time between clusters', title: 'Average time between clusters of the deposits containing this material' },
+]
+const sort = ref({ column: null, desc: false })
+function toggleSort(column) {
+  const s = sort.value
+  if (s.column !== column) sort.value = { column, desc: false }
+  else if (!s.desc) sort.value = { column, desc: true }
+  else sort.value = { column: null, desc: false }
+}
+const sortValue = (l, key) =>
+  key === 'name' ? locationName(l) : key === 'share' ? l.share : key === 'gap' ? l.m.gap?.avg ?? null : l.m[key]
+const sortedLocationRows = computed(() => {
+  const { column, desc } = sort.value
+  if (!column) return locationRows.value
+  const dir = desc ? -1 : 1
+  return [...locationRows.value].sort((a, b) => {
+    const x = sortValue(a, column)
+    const y = sortValue(b, column)
+    if (x == null || y == null) return (x == null) - (y == null) // empty values last either way
+    return (typeof x === 'string' ? x.localeCompare(y) : x - y) * dir
+  })
+})
 const maxShare = computed(() => Math.max(1, ...locations.value.map((l) => l.share)))
 
 // ── deposits and gaps ────────────────────────────────────────────
@@ -277,6 +382,44 @@ const depositRows = computed(() => {
 const maxDepositShare = computed(() => Math.max(1, ...depositRows.value.map((d) => d.share)))
 const maxGap = computed(() => Math.max(1, ...depositRows.value.map((d) => d.gap?.avg ?? 0)))
 
+// ── quality bands per entry ──────────────────────────────────────
+// A material can appear more than once in a rock (say a bulk entry and a small, higher
+// quality one). The Refinery numbers these entries per deposit; here the rows of the
+// focused locations and deposits are combined per entry number, weighting each row's
+// bands by its SCU (SCU mode) or by its scans (count mode).
+const ENTRY_COLORS = ['#4c8dff', '#f5a524', '#3fb68b', '#e5534b', '#a371f7', '#17c3b2']
+const entryColor = (n) => ENTRY_COLORS[(n - 1) % ENTRY_COLORS.length]
+
+const entries = computed(() => {
+  const mode = qualityMode.value
+  const byEntry = new Map()
+  for (const r of entryRows.value) {
+    if (scopeKeys.value && !scopeKeys.value.has(locationKey(r))) continue
+    if (focusDeposits.value.size && !focusDeposits.value.has(r.deposit)) continue
+    if (r[BAND_COLUMNS[mode][0]] == null) continue
+    const e = byEntry.get(r.entry) ?? { entry: Number(r.entry), scu: 0, scans: 0, w: 0, sums: new Array(BAND_LABELS.length).fill(0) }
+    const w = Number(mode === 'scu' ? r.total_scu : r.entry_scans) || 0
+    BAND_COLUMNS[mode].forEach((c, i) => { e.sums[i] += (Number(r[c]) || 0) * w })
+    e.w += w
+    e.scu += num(r.total_scu) ?? 0
+    e.scans += num(r.entry_scans) ?? 0
+    byEntry.set(r.entry, e)
+  }
+  return [...byEntry.values()]
+    .filter((e) => e.w > 0)
+    .map((e) => ({
+      entry: e.entry,
+      scans: e.scans,
+      scuPerRock: e.scans ? e.scu / e.scans : null,
+      bands: e.sums.map((v) => v / e.w),
+    }))
+    .sort((a, b) => a.entry - b.entry)
+})
+// Top of the y scale: the tallest bar, rounded up to 10
+const entryMax = computed(() =>
+  Math.max(10, Math.ceil(Math.max(0, ...entries.value.flatMap((e) => e.bands)) / 10) * 10),
+)
+
 // ── highlighting ─────────────────────────────────────────────────
 // A focused location lights up the deposits it has this material in, and a focused
 // deposit the locations it is found at
@@ -312,7 +455,10 @@ async function load() {
   try {
     const table = `results_${REGION_TABLE}`
     const columns = (await db.describeTable(table)).map((c) => c.column_name)
-    const [{ cells }, data, scans] = await Promise.all([
+    const hasEntries = db.resultTables.includes('material_entries_by_region')
+    const entryTable = 'results_material_entries_by_region'
+    const entryColumns = hasEntries ? (await db.describeTable(entryTable)).map((c) => c.column_name) : []
+    const [{ cells }, data, scans, entryData] = await Promise.all([
       loadRegionConcentrations(db, results, columns),
       db.runQuery(
         `SELECT system, gravity_well, region, deposit, avg_share_pct, composition_scans, material_scans, total_scu,
@@ -327,12 +473,20 @@ async function load() {
            WHERE c.type = ${q(props.material)}
          ) WHERE ${results.buildWhere(['system', 'gravity_well', 'region', 'deposit'])}`,
       ),
+      hasEntries
+        ? db.runQuery(
+            `SELECT system, gravity_well, region, deposit, entry, entry_scans, total_scu,
+                    ${BAND_COLUMNS.scu.join(', ')}, ${BAND_COLUMNS.count.join(', ')}
+             FROM "${entryTable}" WHERE material = ${q(props.material)} AND ${results.buildWhere(entryColumns)}`,
+          )
+        : [],
     ])
     const mine = cells.filter((c) => c.material === props.material)
     mine.sort((a, b) => b.share - a.share || locationName(a).localeCompare(locationName(b)))
     locations.value = mine
     rows.value = data
     scanRows.value = scans.map((r) => ({ ...r, key: locationKey(r) }))
+    entryRows.value = entryData
     // Picks the filters removed are dropped
     selection.value = selection.value.filter((i) =>
       i.type === 'location' ? mine.some((l) => l.key === i.name) : data.some((r) => r.deposit === i.name),
@@ -342,6 +496,7 @@ async function load() {
     locations.value = []
     rows.value = []
     scanRows.value = []
+    entryRows.value = []
   } finally {
     loading.value = false
   }

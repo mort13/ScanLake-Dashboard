@@ -59,3 +59,12 @@ export function formatGap(seconds) {
   const s = Math.round(seconds)
   return s < 120 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`
 }
+
+// Quality bands of 100, as in the quality_<lo>_<hi>_<mode>_pct columns
+export const QUALITY_BANDS = ['0_100', '101_200', '201_300', '301_400', '401_500', '501_600', '601_700', '701_800', '801_900', '901_1000']
+export const BAND_LABELS = QUALITY_BANDS.map((b) => b.replace('_', '–'))
+// Each band is published twice: as a share of the SCU and as a share of the scans
+export const BAND_COLUMNS = {
+  scu: QUALITY_BANDS.map((b) => `quality_${b}_scu_pct`),
+  count: QUALITY_BANDS.map((b) => `quality_${b}_count_pct`),
+}

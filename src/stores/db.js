@@ -16,7 +16,7 @@ const BUNDLES = {
 
 // Only what the dashboard reads: the scan and composition tables, and the result jobs it shows
 const TABLES = ['scans', 'compositions']
-const RESULT_JOBS = ['deposit_materials_by_region', 'highscores']
+const RESULT_JOBS = ['deposit_materials_by_region', 'material_entries_by_region', 'highscores']
 const RESULT_KEY_RE = /^results\/([a-z0-9_]+)\.parquet$/
 const CACHE_NAME = 'scanlake-parquet'
 const REFRESH_INTERVAL_MS = 15 * 60 * 1000

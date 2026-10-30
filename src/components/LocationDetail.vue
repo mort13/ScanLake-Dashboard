@@ -133,18 +133,9 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDbStore } from '@/stores/db'
 import { useResultsStore } from '@/stores/results'
-import { formatCell, formatGap } from '@/lib/results'
+import { formatCell, formatGap, QUALITY_BANDS as BANDS, BAND_LABELS, BAND_COLUMNS } from '@/lib/results'
 
 const TABLE = 'results_deposit_materials_by_region'
-// Quality bands of 100, as in the quality_<lo>_<hi>_pct columns
-const BANDS = ['0_100', '101_200', '201_300', '301_400', '401_500', '501_600', '601_700', '701_800', '801_900', '901_1000']
-const BAND_LABELS = BANDS.map((b) => b.replace('_', '–'))
-// Each band is published twice: as a share of the SCU and as a share of the scans
-const BAND_COLUMNS = {
-  scu: BANDS.map((b) => `quality_${b}_scu_pct`),
-  count: BANDS.map((b) => `quality_${b}_count_pct`),
-}
-
 const NO_BANDS = BANDS.map(() => 0)
 
 const props = defineProps({

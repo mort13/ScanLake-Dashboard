@@ -20,7 +20,7 @@ export const locationName = (l) => l.region ?? l.gravity_well
  * @param columns  column names of the results table
  * @returns {{
  *   locations: Map<string, {key, system, gravity_well, region, scans: number}>,
- *   cells: {key, system, gravity_well, region, material, share: number, presence: number, materialScans: number}[],
+ *   cells: {key, system, gravity_well, region, material, share: number, presence: number, materialScans: number, rocks: number}[],
  * }}
  *   `cells` has one entry per location x material; `scans` of a location is its total scan count.
  */
@@ -71,6 +71,7 @@ export async function loadRegionConcentrations(db, results, columns) {
       share: Math.round((Number(r.weighted) / denom) * 100) / 100,
       presence: Math.round((Number(r.material_scans) / denom) * 10000) / 100,
       materialScans: Number(r.material_scans),
+      rocks: denom, // rocks scanned at the location (the denominator of share)
     })
   }
   return { locations, cells }

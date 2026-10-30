@@ -995,3 +995,17 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 .loc-sub { color: var(--text-subtle); margin-left: 4px; }
 .loc-conc { display: flex; align-items: center; gap: 8px; min-width: 150px; }
 .loc-conc .bar-track { flex: 1; }
+
+/* Quality bands per entry of a material */
+.entry-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-bottom: 8px; font-size: 12px; }
+.entry-key { display: inline-flex; align-items: center; gap: 6px; transition: opacity 0.1s; }
+.entry-key i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.entry-key small { color: var(--text-subtle); }
+.entry-key.dim, .entry-bar.dim { opacity: 0.25; }
+.entry-chart { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; }
+.entry-group { display: flex; flex-direction: column; align-items: stretch; }
+.entry-bars { display: flex; align-items: flex-end; justify-content: center; gap: 2px; height: 150px; border-bottom: 1px solid var(--border); }
+.entry-bar { flex: 1; max-width: 28px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; transition: opacity 0.1s; }
+.entry-fill { width: 100%; border-radius: 2px 2px 0 0; min-height: 0; }
+.entry-val { font-size: 10px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.entry-label { text-align: center; font-size: 10px; color: var(--text-subtle); margin-top: 3px; }
