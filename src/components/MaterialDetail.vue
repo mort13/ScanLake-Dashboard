@@ -86,41 +86,34 @@
               <button :class="{ active: qualityMode === 'count' }" @click="qualityMode = 'count'">by count</button>
             </span>
           </h3>
-          <div class="entry-legend" @mouseleave="hoverEntry = null">
-            <span
+          <div class="q-axis"><span>0</span><span>500</span><span>1000</span></div>
+          <ul class="quality-list" @mouseleave="hoverEntry = null">
+            <li
               v-for="e in entries"
               :key="e.entry"
-              class="entry-key"
               :class="{ dim: hoverEntry != null && hoverEntry !== e.entry }"
+              :style="{ '--q-color': entryColor(e.entry) }"
+              :title="`Entry ${e.entry}: ${formatCell(e.scuPerRock)} SCU when present, ${e.scans.toLocaleString()} scans`"
               @mouseenter="hoverEntry = e.entry"
             >
-              <i :style="{ background: entryColor(e.entry) }" />
-              Entry {{ e.entry }}
-              <small>{{ formatCell(e.scuPerRock) }} SCU when present · {{ e.scans.toLocaleString() }} scans</small>
-            </span>
-          </div>
-          <div class="entry-chart" @mouseleave="hoverEntry = null">
-            <div v-for="(label, i) in BAND_LABELS" :key="label" class="entry-group">
-              <div class="entry-bars">
-                <div
-                  v-for="e in entries"
-                  :key="e.entry"
-                  class="entry-bar"
-                  :class="{ dim: hoverEntry != null && hoverEntry !== e.entry }"
-                  :title="`Entry ${e.entry}, ${label}: ${formatCell(e.bands[i])}%`"
-                  @mouseenter="hoverEntry = e.entry"
-                >
-                  <span v-if="e.bands[i] >= 5" class="entry-val">{{ Math.round(e.bands[i]) }}</span>
-                  <span class="entry-fill" :style="{ height: (e.bands[i] / entryMax) * 100 + '%', background: entryColor(e.entry) }" />
-                </div>
-              </div>
-              <span class="entry-label">{{ label.split('–')[0] }}</span>
-            </div>
-          </div>
+              <span class="bar-name"><i class="entry-dot" :style="{ background: entryColor(e.entry) }" />Entry {{ e.entry }}</span>
+              <span class="q-bands">
+                <span
+                  v-for="(pct, i) in e.bands"
+                  :key="i"
+                  class="q-band"
+                  :style="{ '--a': pct ? 0.12 + (pct / 100) * 0.88 : 0.06 }"
+                  :title="`${BAND_LABELS[i]}: ${formatCell(pct)}%`"
+                ><span v-if="pct >= 0.5">{{ Math.round(pct) }}</span></span>
+              </span>
+              <span class="bar-value">{{ formatCell(e.scuPerRock) }} SCU</span>
+            </li>
+          </ul>
           <p class="loc-hint">
-            Share of each entry's {{ qualityMode === 'scu' ? 'SCU' : 'scans' }} per quality band (0 to {{ entryMax }}%).
-            A material can appear more than once in a rock, for example as a bulk entry and a small higher
-            quality one; each entry gets its own colour. Entries are combined across the selected locations and deposits.
+            Darker means more of the entry's {{ qualityMode === 'scu' ? 'SCU' : 'scans' }} fall in that band; the
+            number at the right is the SCU of the entry per rock it is in. A material can appear more than once
+            in a rock, for example as a bulk entry and a small higher quality one. Entries are combined across
+            the selected locations and deposits.
           </p>
         </section>
 
@@ -415,11 +408,6 @@ const entries = computed(() => {
     }))
     .sort((a, b) => a.entry - b.entry)
 })
-// Top of the y scale: the tallest bar, rounded up to 10
-const entryMax = computed(() =>
-  Math.max(10, Math.ceil(Math.max(0, ...entries.value.flatMap((e) => e.bands)) / 10) * 10),
-)
-
 // ── highlighting ─────────────────────────────────────────────────
 // A focused location lights up the deposits it has this material in, and a focused
 // deposit the locations it is found at
