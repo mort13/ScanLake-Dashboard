@@ -91,9 +91,9 @@
             <li
               v-for="e in entries"
               :key="e.entry"
-              :class="{ dim: hoverEntry != null && hoverEntry !== e.entry }"
+              :class="{ dim: hoverEntry != null && hoverEntry !== e.entry, empty: e.empty }"
               :style="{ '--q-color': entryColor(e.entry) }"
-              :title="`Entry ${e.entry}: ${formatCell(e.scuPerRock)} SCU when present, ${e.scans.toLocaleString()} scans`"
+              :title="e.empty ? `Entry ${e.entry}: no data in the selection` : `Entry ${e.entry}: ${formatCell(e.scuPerRock)} SCU when present, ${e.scans.toLocaleString()} scans`"
               @mouseenter="hoverEntry = e.entry"
             >
               <span class="bar-name"><i class="entry-dot" :style="{ background: entryColor(e.entry) }" />Entry {{ e.entry }}</span>
@@ -106,7 +106,7 @@
                   :title="`${BAND_LABELS[i]}: ${formatCell(pct)}%`"
                 ><span v-if="pct >= 0.5">{{ Math.round(pct) }}</span></span>
               </span>
-              <span class="bar-value">{{ formatCell(e.scuPerRock) }} SCU</span>
+              <span class="bar-value">{{ e.empty ? '–' : `${formatCell(e.scuPerRock)} SCU` }}</span>
             </li>
           </ul>
           <p class="loc-hint">
@@ -411,15 +411,15 @@ const entries = computed(() => {
     e.scans += num(r.entry_scans) ?? 0
     byEntry.set(r.entry, e)
   }
-  return [...byEntry.values()]
-    .filter((e) => e.w > 0)
-    .map((e) => ({
-      entry: e.entry,
-      scans: e.scans,
-      scuPerRock: e.scans ? e.scu / e.scans : null,
-      bands: e.sums.map((v) => v / e.w),
-    }))
-    .sort((a, b) => a.entry - b.entry)
+  // The rows stay the same whatever is selected, so the chart keeps its height and
+  // the panels below don't move; entries without data in the selection are empty
+  const ids = [...new Set(entryRows.value.map((r) => Number(r.entry)))].sort((a, b) => a - b)
+  return ids.map((id) => {
+    const e = byEntry.get(id)
+    return e && e.w > 0
+      ? { entry: id, empty: false, scans: e.scans, scuPerRock: e.scans ? e.scu / e.scans : null, bands: e.sums.map((v) => v / e.w) }
+      : { entry: id, empty: true, scans: 0, scuPerRock: null, bands: new Array(BAND_LABELS.length).fill(0) }
+  })
 })
 // ── highlighting ─────────────────────────────────────────────────
 // A focused location lights up the deposits it has this material in, and a focused

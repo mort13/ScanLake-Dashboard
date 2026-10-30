@@ -998,3 +998,4 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 
 /* Quality strips per entry of a material reuse the Locations quality styles */
 .entry-dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+.loc-chart li.empty { opacity: 0.3; }
