@@ -68,3 +68,20 @@ export const BAND_COLUMNS = {
   scu: QUALITY_BANDS.map((b) => `quality_${b}_scu_pct`),
   count: QUALITY_BANDS.map((b) => `quality_${b}_count_pct`),
 }
+
+const DECIMAL_SIGN = new Intl.NumberFormat().formatToParts(1.1).find((p) => p.type === 'decimal')?.value ?? '.'
+
+/** formatCell's text split at the decimal sign: { int: '19.299', frac: ',38' } (frac is '' for whole numbers). */
+export function splitNumber(v) {
+  if (v === null || v === undefined) return { int: '–', frac: '' }
+  const text = formatCell(v)
+  const i = text.lastIndexOf(DECIMAL_SIGN)
+  return i < 0 ? { int: text, frac: '' } : { int: text.slice(0, i), frac: text.slice(i) }
+}
+
+/** Width in ch of the part before the decimal sign (thousands separators are narrower than digits). */
+export function intWeight(v) {
+  const { int } = splitNumber(v)
+  const seps = int.replace(/[0-9]/g, '').length
+  return int.length - seps + seps * 0.5
+}

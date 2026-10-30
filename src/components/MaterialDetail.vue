@@ -60,15 +60,15 @@
                   <td>
                     <div class="loc-conc">
                     <span class="bar-track"><span :style="{ width: (l.share / maxShare) * 100 + '%' }" /></span>
-                    <span class="num">{{ formatCell(l.share) }}%</span>
+                    <NumCell :value="l.share" :width="numWidth.share" suffix="%" />
                   </div>
                   </td>
-                  <td class="num">{{ l.m.scans.toLocaleString() }}</td>
-                  <td class="num">{{ formatCell(l.m.mass) }}</td>
-                  <td class="num">{{ formatCell(l.m.scu) }}</td>
-                  <td class="num">{{ formatCell(l.m.resistance) }}</td>
-                  <td class="num">{{ formatCell(l.m.instability) }}</td>
-                  <td class="num" :title="l.m.gap ? `${l.m.gap.n} ${l.m.gap.n === 1 ? 'gap' : 'gaps'}` : 'No gaps measured'">
+                  <td><NumCell :value="l.m.scans" :width="numWidth.scans" /></td>
+                  <td><NumCell :value="l.m.mass" :width="numWidth.mass" /></td>
+                  <td><NumCell :value="l.m.scu" :width="numWidth.scu" /></td>
+                  <td><NumCell :value="l.m.resistance" :width="numWidth.resistance" /></td>
+                  <td><NumCell :value="l.m.instability" :width="numWidth.instability" /></td>
+                  <td :title="l.m.gap ? `${l.m.gap.n} ${l.m.gap.n === 1 ? 'gap' : 'gaps'}` : 'No gaps measured'">
                     {{ l.m.gap ? formatGap(l.m.gap.avg) : '–' }}
                   </td>
                 </tr>
@@ -170,7 +170,8 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDbStore } from '@/stores/db'
 import { useResultsStore } from '@/stores/results'
-import { formatCell, formatGap, BAND_LABELS, BAND_COLUMNS } from '@/lib/results'
+import { formatCell, formatGap, intWeight, BAND_LABELS, BAND_COLUMNS } from '@/lib/results'
+import NumCell from '@/components/NumCell.vue'
 import { REGION_TABLE, loadRegionConcentrations, locationKey, locationName } from '@/lib/regionData'
 
 const props = defineProps({
@@ -322,6 +323,18 @@ const sortedLocationRows = computed(() => {
     if (x == null || y == null) return (x == null) - (y == null) // empty values last either way
     return (typeof x === 'string' ? x.localeCompare(y) : x - y) * dir
   })
+})
+// Width of the part before the decimal sign per numeric column, so the numbers line up at it
+const numWidth = computed(() => {
+  const widest = (value) => Math.max(1, ...locationRows.value.map((l) => intWeight(value(l))))
+  return {
+    share: widest((l) => l.share),
+    scans: widest((l) => l.m.scans),
+    mass: widest((l) => l.m.mass),
+    scu: widest((l) => l.m.scu),
+    resistance: widest((l) => l.m.resistance),
+    instability: widest((l) => l.m.instability),
+  }
 })
 const maxShare = computed(() => Math.max(1, ...locations.value.map((l) => l.share)))
 
