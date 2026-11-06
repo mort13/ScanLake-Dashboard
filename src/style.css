@@ -96,8 +96,6 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
   white-space: nowrap;
 }
 
-.header-logo { font-size: 20px; color: var(--accent); }
-
 .header-status {
   flex: 1;
   display: flex;
@@ -1024,11 +1022,18 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 *, *::before, *::after { border-radius: 0 !important; }
 
 /* Display font for names, titles and big numbers; VT323 needs a larger size */
-.header-brand { font-family: var(--font-display); font-size: 24px; font-weight: 400; letter-spacing: 1px; text-transform: uppercase; color: var(--amber-hi); }
-.header-logo { color: var(--amber-hi); }
-.header-tab { font-family: var(--font-display); font-size: 20px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: none; }
-.header-tab:hover { background: var(--ink-1); }
-.header-tab.active { background: var(--amber); color: var(--bg); text-shadow: none; }
+/* Header brand and tabs: the landing page's status line (FrontDesk .brand and .site-nav) */
+.header-brand { font-family: var(--font-display); font-size: 22px; font-weight: 400; line-height: 1; letter-spacing: 1px; text-transform: uppercase; color: var(--amber-hi); text-decoration: none; padding: 2px 4px; }
+.header-brand:hover { background: var(--amber); color: var(--bg); text-shadow: none; }
+.header-tabs { align-items: center; gap: 4px; }
+.header-tab { font-family: var(--font-display); font-size: 22px; font-weight: 400; line-height: 1; text-transform: uppercase; color: var(--text-muted); padding: 2px 6px; border-bottom: none; transition: none; }
+.header-tab::before { content: '/'; color: var(--text-subtle); margin-right: 1px; }
+.header-tab:hover { background: var(--amber); color: var(--bg); text-shadow: none; }
+.header-tab:hover::before { color: var(--bg); }
+/* The open tab: bright and underlined, like a link you are on */
+.header-tab.active { color: var(--amber-hi); text-decoration: underline 2px var(--amber); text-underline-offset: 4px; }
+.header-tab.active::before { color: var(--amber); }
+.header-tab.active:hover, .header-tab.active:hover::before { color: var(--bg); }
 .panel-title { font-family: var(--font-display); font-size: 19px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.5px; color: var(--amber-hi); }
 .panel-header { background: var(--ink-1); }
 .stat-value { font-family: var(--font-display); font-size: 32px; font-weight: 400; letter-spacing: 0; line-height: 1.05; color: var(--amber-hi); }
@@ -1085,7 +1090,6 @@ select option { background: var(--bg-surface); color: var(--text); }
 
 /* The mono font is wider: keep the header on one line */
 .app-header { gap: 12px; padding: 0 16px; }
-.header-tab { padding: 0 11px; }
 .header-status, .header-actions > *, .header-account { white-space: nowrap; }
 .header-status { min-width: 0; overflow: hidden; }
 .header-actions { gap: 2px; }

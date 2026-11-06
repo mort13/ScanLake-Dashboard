@@ -1,9 +1,10 @@
 <template>
   <header class="app-header">
-    <div class="header-brand">
-      <span class="header-logo">◈</span>
+    <!-- Back to the landing page; the mark is the same drawing as public/favicon.svg -->
+    <a class="header-brand" href="https://scanlake.rocks/" title="ScanLake home">
+      <svg class="logo-mark" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M7 1h2v1h1v1h1v1h1v1h1v1h1v1h1v2h-1v1h-1v1h-1v1h-1v1h-1v1h-1v1H7v-1H6v-1H5v-1H4v-1H3v-1H2V9H1V7h1V6h1V5h1V4h1V3h1V2h1zM7 3h2v1h1v1h1v1h1v1h1v2h-1v1h-1v1h-1v1h-1v1H7v-1H6v-1H5v-1H4V9H3V7h1V6h1V5h1V4h1zM7 5h2v1h1v1h1v2h-1v1h-1v1H7v-1H6V9H5V7h1V6h1z"/></svg>
       <span class="header-title">ScanLake</span>
-    </div>
+    </a>
 
     <nav class="header-tabs" role="tablist">
       <button
