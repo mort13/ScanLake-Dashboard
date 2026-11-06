@@ -1,7 +1,13 @@
 <template>
   <aside class="filter-sidebar" :class="{ collapsed }">
-    <button class="sidebar-toggle" @click="collapsed = !collapsed" :title="collapsed ? 'Show filters' : 'Hide filters'">
-      <span class="toggle-icon">{{ collapsed ? '›' : '‹' }}</span>
+    <button
+      class="sidebar-toggle"
+      @click="collapsed = !collapsed"
+      :title="collapsed ? 'Show filters' : 'Hide filters'"
+      :aria-expanded="String(!collapsed)"
+    >
+      <span class="toggle-label">Filter</span>
+      <span class="toggle-icon" aria-hidden="true">{{ collapsed ? '›' : '‹' }}</span>
     </button>
 
     <div class="sidebar-body" v-show="!collapsed">
@@ -125,7 +131,8 @@ import TagInput from './TagInput.vue'
 
 const filters = useFiltersStore()
 const auth = useAuthStore()
-const collapsed = ref(false)
+// Hidden until the user pulls it out with the "Filter" tab
+const collapsed = ref(true)
 
 // 'results' hides the quality and date filters, which the precomputed results can't use
 defineProps({ scope: { type: String, default: 'dashboard' } })
