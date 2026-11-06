@@ -181,7 +181,10 @@ async function load() {
   }
 }
 
-/** One card per location. */
+/** Compares two names alphabetically; a missing one (NULL from the query) counts as empty instead of throwing. */
+const compareNames = (x, y) => (x ?? '').localeCompare(y ?? '')
+
+/** One card per location, ordered by system, gravity well, then region. */
 async function loadCards() {
   const { locations, cells } = await loadRegionConcentrations(db, results, columns.value, { byWell: results.groupByWell })
   const byLoc = new Map([...locations].map(([key, l]) => [key, { ...l, materials: [] }]))
@@ -190,7 +193,10 @@ async function loadCards() {
   }
   cards.value = [...byLoc.values()]
     .filter((c) => c.materials.length)
-    .sort((a, b) => b.scans - a.scans || locationName(a).localeCompare(locationName(b)))
+    .sort((a, b) =>
+      compareNames(a.system, b.system) ||
+      compareNames(a.gravity_well, b.gravity_well) ||
+      compareNames(a.region, b.region))
   total.value = cards.value.length
   rows.value = cards.value // keeps the empty-state check working
 }
