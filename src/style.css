@@ -1,39 +1,40 @@
 /* ================================================================
    ScanLake Dashboard — Global Styles
-   Inspired by Apache Superset dark theme.
+   The amber CRT terminal theme of all ScanLake pages (theme.css),
+   mapped onto the Dashboard's own tokens.
    ================================================================ */
 
 /* ── CSS Variables ─────────────────────────────────────────────── */
 :root {
-  --bg-base:       #0d1117;
-  --bg-surface:    #161b22;
-  --bg-elevated:   #21262d;
-  --bg-hover:      #30363d;
+  --bg-base:       var(--bg);
+  --bg-surface:    var(--bg-raised);
+  --bg-elevated:   var(--ink-1);
+  --bg-hover:      #2b1c06;
 
-  --border:        #30363d;
-  --border-subtle: #21262d;
+  --border:        #4d3209;
+  --border-subtle: var(--ink-2);
 
-  --text:          #e6edf3;
-  --text-muted:    #8b949e;
-  --text-subtle:   #6e7681;
+  /* --text, --text-muted, --text-subtle and --danger come from theme.css */
+  --accent:        var(--amber);
+  --accent-hover:  var(--amber-hi);
+  --accent-muted:  rgba(255, 176, 0, 0.14);
 
-  --accent:        #388bfd;
-  --accent-hover:  #58a6ff;
-  --accent-muted:  rgba(56, 139, 253, 0.15);
-
-  --danger:        #f85149;
-  --success:       #3fb950;
-  --warning:       #d29922;
+  --success:       var(--amber-hi);
+  --warning:       var(--amber);
 
   --sidebar-width: 260px;
   --header-height: 52px;
 
-  --radius-sm:  4px;
-  --radius-md:  8px;
-  --radius-lg:  12px;
+  /* Terminal: square corners */
+  --radius-sm:  0;
+  --radius-md:  0;
+  --radius-lg:  0;
 
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 14px;
+  /* A softer glow than the landing page: tables and charts stay crisp */
+  --glow: 0 0 6px rgba(255, 176, 0, 0.22);
+
+  font-family: var(--font-mono);
+  font-size: 13px;
   line-height: 1.5;
   color: var(--text);
   background: var(--bg-base);
@@ -149,7 +150,7 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 /* ── Buttons ───────────────────────────────────────────────────── */
 .btn-primary {
   background: var(--accent);
-  color: #fff;
+  color: var(--bg); text-shadow: none;
   padding: 6px 14px;
   border-radius: var(--radius-sm);
   font-size: 13px;
@@ -267,7 +268,7 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
   align-items: center;
   gap: 4px;
   background: var(--accent-muted);
-  border: 1px solid rgba(56,139,253,0.3);
+  border: 1px solid rgba(255, 176, 0, 0.35);
   color: var(--accent-hover);
   padding: 2px 6px;
   border-radius: 100px;
@@ -276,8 +277,8 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 }
 
 .tag.negated {
-  background: rgba(248,81,73,0.12);
-  border-color: rgba(248,81,73,0.3);
+  background: rgba(255, 75, 43, 0.12);
+  border-color: rgba(255, 75, 43, 0.4);
   color: var(--danger);
 }
 
@@ -781,7 +782,7 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 }
 .ticker-label {
   background: var(--accent);
-  color: #fff;
+  color: var(--bg); text-shadow: none;
   font-weight: 700;
   font-size: 10px;
   letter-spacing: 0.5px;
@@ -816,7 +817,7 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
   font-size: 12px;
 }
 .result-chip:hover { color: var(--text); border-color: var(--text-muted); }
-.result-chip.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+.result-chip.active { color: var(--bg); text-shadow: none; background: var(--accent); border-color: var(--accent); }
 
 .results-filters {
   display: grid;
@@ -872,9 +873,9 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
   color: var(--text-muted);
   font-size: 12px; font-weight: 700;
 }
-.rank-1 .board-rank { background: #d4a72c; color: #1a1300; }
-.rank-2 .board-rank { background: #aab2bd; color: #14181d; }
-.rank-3 .board-rank { background: #b87333; color: #1c0f05; }
+.rank-1 .board-rank { background: var(--amber-hi); color: var(--bg); text-shadow: none; }
+.rank-2 .board-rank { background: var(--amber); color: var(--bg); text-shadow: none; }
+.rank-3 .board-rank { background: var(--ink-4); color: var(--bg); text-shadow: none; }
 .board-who, .board-value { display: flex; flex-direction: column; min-width: 0; }
 .board-value { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
 .board-who small, .board-value small { font-size: 11px; font-weight: 400; color: var(--text-subtle); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -922,7 +923,7 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 }
 .seg-btn + .seg-btn { border-left: 1px solid var(--border); }
 .seg-btn:hover { color: var(--text); }
-.seg-btn.active { color: #fff; background: var(--accent); }
+.seg-btn.active { color: var(--bg); text-shadow: none; background: var(--accent); }
 
 /* ── Location detail ───────────────────────────────────────────── */
 .loc-head { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
@@ -969,7 +970,8 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
   flex: 1;
   display: flex; align-items: center; justify-content: center;
   font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums;
-  color: #fff;
+  color: var(--amber-hi);
+  text-shadow: 0 0 2px #000, 0 0 3px #000;
 }
 /* The fill is a layer of its own so the number on top keeps full opacity */
 .q-band::before {
@@ -988,7 +990,7 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
   background: none; color: var(--text-muted);
   border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
 }
-.q-mode button.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+.q-mode button.active { color: var(--bg); text-shadow: none; background: var(--accent); border-color: var(--accent); }
 
 .loc-chart li { cursor: pointer; }
 .loc-chart li.loc-total { cursor: default; }
@@ -1013,3 +1015,78 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 /* Quality strips per entry of a material reuse the Locations quality styles */
 .entry-dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
 .loc-chart li.empty { opacity: 0.3; }
+
+/* ================================================================
+   Terminal look (amber CRT, see theme.css)
+   ================================================================ */
+
+/* Square corners everywhere, also where a component sets its own radius */
+*, *::before, *::after { border-radius: 0 !important; }
+
+/* Display font for names, titles and big numbers; VT323 needs a larger size */
+.header-brand { font-family: var(--font-display); font-size: 24px; font-weight: 400; letter-spacing: 1px; text-transform: uppercase; color: var(--amber-hi); }
+.header-logo { color: var(--amber-hi); }
+.header-tab { font-family: var(--font-display); font-size: 20px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: none; }
+.header-tab:hover { background: var(--ink-1); }
+.header-tab.active { background: var(--amber); color: var(--bg); text-shadow: none; }
+.panel-title { font-family: var(--font-display); font-size: 19px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.5px; color: var(--amber-hi); }
+.panel-header { background: var(--ink-1); }
+.stat-value { font-family: var(--font-display); font-size: 32px; font-weight: 400; letter-spacing: 0; line-height: 1.05; color: var(--amber-hi); }
+.sidebar-title { font-family: var(--font-display); font-size: 18px; font-weight: 400; letter-spacing: 0.5px; color: var(--text-muted); }
+.sidebar-title::before { content: '> '; color: var(--text-subtle); }
+.modal-header h2, .modal-header h3 { font-size: 24px; font-weight: 400; text-transform: uppercase; color: var(--amber-hi); }
+.board-head h3 { font-size: 22px; font-weight: 400; text-transform: uppercase; color: var(--amber-hi); }
+.region-head h3 { font-size: 20px; font-weight: 400; color: var(--amber-hi); }
+.loc-head h2 { font-size: 28px; font-weight: 400; text-transform: uppercase; color: var(--amber-hi); }
+.loc-chart h3 { font-size: 19px; font-weight: 400; text-transform: uppercase; }
+.loc-chart h3 small { font-family: var(--font-mono); font-size: 11px; text-transform: none; }
+.schema-table h4 { font-family: var(--font-display); font-size: 18px; font-weight: 400; text-transform: uppercase; }
+.loc-stats strong { font-family: var(--font-display); font-size: 26px; font-weight: 400; color: var(--amber-hi); }
+.board-value { font-family: var(--font-display); font-size: 20px; font-weight: 400; color: var(--amber-hi); }
+.board-rank { font-family: var(--font-display); font-size: 17px; font-weight: 400; }
+
+/* Buttons: solid amber is the main action, outlines the rest; hover is inverse video */
+.btn-primary { background: var(--amber); color: var(--bg); text-shadow: none; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.btn-primary:hover:not(:disabled) { background: var(--amber-hi); }
+.btn-secondary { background: transparent; border-color: var(--ink-4); color: var(--text); }
+.btn-secondary:hover:not(:disabled) { background: var(--amber); border-color: var(--amber); color: var(--bg); text-shadow: none; }
+.btn-ghost:hover { background: var(--ink-2); color: var(--amber-hi); }
+.btn-primary::before { content: '['; opacity: 0.6; }
+.btn-primary::after { content: ']'; opacity: 0.6; }
+.result-chip.active, .seg-btn.active, .q-mode button.active, .preset-btn.active { background: var(--amber); border-color: var(--amber); color: var(--bg); text-shadow: none; }
+
+/* Inputs: black wells with an amber edge */
+input, select, textarea { background: var(--bg); border-color: var(--border); color: var(--text); }
+input:focus, select:focus, textarea:focus, .tag-input-wrap:focus-within { border-color: var(--amber); box-shadow: 0 0 0 1px var(--amber), 0 0 10px rgba(255, 176, 0, 0.25); }
+select option { background: var(--bg-surface); color: var(--text); }
+.tag { color: var(--amber-hi); }
+
+/* Panels, cards and tables */
+.panel, .board, .region-card, .results-filters, .results-table-wrap, .modal { border-color: var(--border); }
+.region-card:hover, .region-card:focus-visible { border-color: var(--amber); box-shadow: 0 0 12px rgba(255, 176, 0, 0.18); }
+.result-table th { text-transform: uppercase; letter-spacing: 0.5px; font-size: 11px; color: var(--text-subtle); }
+.result-table tr:hover td { background: var(--ink-1); }
+.mat-bar > span, .bar-track > span { box-shadow: var(--glow); }
+.modal { box-shadow: 0 0 0 1px var(--ink-2), 0 0 30px rgba(255, 176, 0, 0.12), 0 24px 64px rgba(0, 0, 0, 0.6); }
+.modal-tab.active { color: var(--amber-hi); border-bottom-color: var(--amber); }
+
+/* Session ticker: a status line */
+.session-ticker { background: var(--ink-1); border-bottom-color: var(--border); }
+.ticker-label { font-family: var(--font-display); font-size: 15px; font-weight: 400; padding: 0 6px; }
+
+/* Spinner: a block that turns in steps */
+.spinner { border-color: var(--ink-2); border-top-color: var(--amber); animation-timing-function: steps(8, end); }
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--ink-3); }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-4); }
+* { scrollbar-color: var(--ink-3) transparent; }
+
+/* The mono font is wider: keep the header on one line */
+.app-header { gap: 12px; padding: 0 16px; }
+.header-tab { padding: 0 11px; }
+.header-status, .header-actions > *, .header-account { white-space: nowrap; }
+.header-status { min-width: 0; overflow: hidden; }
+.header-actions { gap: 2px; }
+.header-actions .btn-ghost, .header-actions .btn-secondary { padding: 4px 8px; font-size: 12px; }

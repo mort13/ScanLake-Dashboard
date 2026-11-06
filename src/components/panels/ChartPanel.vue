@@ -18,6 +18,7 @@ import { useFiltersStore } from '@/stores/filters'
 import { useAliasesStore } from '@/stores/aliases'
 import { getBuiltinSQL } from '@/lib/queries'
 import { rowsToCsv, downloadCsv } from '@/lib/csv'
+import { amberShade, colorscaleFor, plotlyBase, SURFACE_GAP } from '@/lib/chartTheme'
 
 const props = defineProps({
   panel: { type: Object, required: true },
@@ -76,7 +77,7 @@ function renderPlot(rows) {
   const layout = plotlyLayout(props.panel.title)
 
   if (type === 'pie') {
-    // Pie: use solid blue, no colorscale
+    // Pie: amber shades by index, no colorscale
     data = [{
       type: 'pie',
       labels: rows.map((r) => r[chart.x]),
@@ -84,21 +85,18 @@ function renderPlot(rows) {
       // Percent inside the slices (hidden where they do not fit); names are in the hover
       textinfo: 'percent',
       textposition: 'inside',
+      insidetextfont: { color: '#0a0602' },
       hoverinfo: 'label+value+percent',
       marker: {
-        color: rows.map((_, i) => {
-          // Blue gradient by index
-          const hue = 210
-          const light = 50 + (i / Math.max(1, rows.length - 1)) * 30
-          return `hsl(${hue}, 70%, ${light}%)`
-        }),
+        color: rows.map((_, i) => amberShade(i, rows.length, 62, 30)),
+        line: SURFACE_GAP,
       },
     }]
     layout.showlegend = true
   } else if (type === 'scatter') {
     const colorCol = chart.color
     const colors = colorCol ? rows.map((r) => r[colorCol]) : undefined
-    const colorscale = colorCol ? (chart.colorscale || 'Viridis') : undefined
+    const colorscale = colorCol ? colorscaleFor(chart.colorscale) : undefined
 
     data = [{
       type: 'scatter',
@@ -110,26 +108,22 @@ function renderPlot(rows) {
       marker: {
         size: 7,
         opacity: 0.8,
-        color: colors || '#5470c6',
+        color: colors || '#ffb000',
         colorscale,
         showscale: !!colorCol,
         colorbar: colorCol ? { title: { text: colorCol }, thickness: 12, len: 0.7 } : undefined,
       },
     }]
-    layout.xaxis = { title: { text: chart.x }, color: 'var(--text-muted)' }
-    layout.yaxis = { title: { text: chart.y }, color: 'var(--text-muted)' }
+    layout.xaxis = { ...layout.xaxis, title: { text: chart.x } }
+    layout.yaxis = { ...layout.yaxis, title: { text: chart.y } }
   } else {
-    // bar: use blue gradient, not colorscale
+    // bar: amber shades by rank, not colorscale
     const xs = rows.map((r) => r[chart.x])
     const ys = rows.map((r) => r[chart.y])
 
     const marker = {
-      color: rows.map((_, i) => {
-        // Blue gradient by rank
-        const hue = 210
-        const light = 40 + (i / Math.max(1, rows.length - 1)) * 40
-        return `hsl(${hue}, 70%, ${light}%)`
-      }),
+      color: rows.map((_, i) => amberShade(i, rows.length)),
+      line: SURFACE_GAP,
     }
 
     data = [{
@@ -140,11 +134,11 @@ function renderPlot(rows) {
       marker,
     }]
     if (chart.orientation === 'h') {
-      layout.xaxis = { title: { text: chart.y } }
-      layout.yaxis = { automargin: true }
+      layout.xaxis = { ...layout.xaxis, title: { text: chart.y } }
+      layout.yaxis = { ...layout.yaxis, automargin: true }
     } else {
-      layout.xaxis = { title: { text: chart.x }, tickangle: -35, automargin: true }
-      layout.yaxis = { title: { text: chart.y } }
+      layout.xaxis = { ...layout.xaxis, title: { text: chart.x }, tickangle: -35, automargin: true }
+      layout.yaxis = { ...layout.yaxis, title: { text: chart.y } }
     }
   }
 
@@ -154,14 +148,10 @@ function renderPlot(rows) {
 
 function plotlyLayout(title) {
   return {
-    paper_bgcolor: 'transparent',
-    plot_bgcolor: 'rgba(255,255,255,0.03)',
-    font: { color: '#c9d1d9', family: 'Inter, system-ui, sans-serif', size: 12 },
+    ...plotlyBase(),
     margin: { t: 10, r: 16, b: 48, l: 52 },
     showlegend: false,
     uniformtext: { minsize: 10, mode: 'hide' },
-    xaxis: { gridcolor: 'rgba(255,255,255,0.07)', zerolinecolor: 'rgba(255,255,255,0.1)' },
-    yaxis: { gridcolor: 'rgba(255,255,255,0.07)', zerolinecolor: 'rgba(255,255,255,0.1)' },
   }
 }
 

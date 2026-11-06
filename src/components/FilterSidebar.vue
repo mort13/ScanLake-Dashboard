@@ -193,9 +193,9 @@ function clear() {
 }
 
 .quality-input {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #c9d1d9;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  color: var(--text);
   padding: 8px 10px;
   border-radius: 4px;
   font-size: 14px;
@@ -204,15 +204,15 @@ function clear() {
 }
 
 .quality-input:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--text-subtle);
+  background: var(--bg-elevated);
 }
 
 .quality-input:focus {
   outline: none;
-  border-color: #5470c6;
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 0 2px rgba(84, 112, 198, 0.2);
+  border-color: var(--accent);
+  background: var(--bg-base);
+  box-shadow: 0 0 0 2px var(--accent-muted);
 }
 
 .date-inputs {
@@ -236,9 +236,9 @@ function clear() {
 }
 
 .date-input {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #c9d1d9;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  color: var(--text);
   padding: 6px 8px;
   border-radius: 4px;
   font-size: 12px;
@@ -249,15 +249,15 @@ function clear() {
 }
 
 .date-input:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--text-subtle);
+  background: var(--bg-elevated);
 }
 
 .date-input:focus {
   outline: none;
-  border-color: #5470c6;
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 0 2px rgba(84, 112, 198, 0.2);
+  border-color: var(--accent);
+  background: var(--bg-base);
+  box-shadow: 0 0 0 2px var(--accent-muted);
 }
 
 .date-range-hint {

@@ -68,14 +68,14 @@ function drawStatsCanvas(width, height, title) {
   canvas.height = height
   const ctx = canvas.getContext('2d')
 
-  ctx.fillStyle = '#161b22'
+  ctx.fillStyle = '#0a0602'
   ctx.fillRect(0, 0, width, height)
 
-  ctx.fillStyle = '#e6edf3'
-  ctx.font = 'bold 16px "Inter", system-ui, sans-serif'
+  ctx.fillStyle = '#ffd98a'
+  ctx.font = '22px "VT323", ui-monospace, monospace'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
-  ctx.fillText(title || 'Statistics', 24, 28)
+  ctx.fillText((title || 'Statistics').toUpperCase(), 24, 28)
 
   const count = chips.value.length
   if (count === 0) return canvas
@@ -91,24 +91,24 @@ function drawStatsCanvas(width, height, title) {
     const x = padH + i * (chipW + gap)
     const y = startY
 
-    ctx.fillStyle = '#21262d'
+    ctx.fillStyle = '#120b03'
     ctx.beginPath()
-    ctx.roundRect(x, y, chipW, chipH, 8)
+    ctx.rect(x, y, chipW, chipH)
     ctx.fill()
-    ctx.strokeStyle = '#30363d'
+    ctx.strokeStyle = '#a86a10'
     ctx.lineWidth = 1
     ctx.stroke()
 
     const valSize = Math.min(26, Math.max(13, chipH * 0.32))
-    ctx.fillStyle = '#e6edf3'
-    ctx.font = `bold ${valSize}px "Inter", system-ui, sans-serif`
+    ctx.fillStyle = '#ffd98a'
+    ctx.font = `${Math.round(valSize * 1.3)}px "VT323", ui-monospace, monospace`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText(chip.value, x + chipW / 2, y + chipH * 0.42)
 
     const lblSize = Math.min(11, Math.max(9, chipH * 0.14))
-    ctx.fillStyle = '#6e7681'
-    ctx.font = `500 ${lblSize}px "Inter", system-ui, sans-serif`
+    ctx.fillStyle = '#a86a10'
+    ctx.font = `${lblSize}px "IBM Plex Mono", ui-monospace, monospace`
     ctx.fillText(chip.label.toUpperCase(), x + chipW / 2, y + chipH * 0.72)
   })
 

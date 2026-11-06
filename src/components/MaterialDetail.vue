@@ -172,6 +172,7 @@ import { useDbStore } from '@/stores/db'
 import { useResultsStore } from '@/stores/results'
 import { formatCell, formatGap, intWeight, BAND_LABELS, BAND_COLUMNS } from '@/lib/results'
 import NumCell from '@/components/NumCell.vue'
+import { CATEGORICAL } from '@/lib/chartTheme'
 import { REGION_TABLE, loadRegionConcentrations, locationKey, locationName } from '@/lib/regionData'
 
 const props = defineProps({
@@ -393,7 +394,7 @@ const maxGap = computed(() => Math.max(1, ...depositRows.value.map((d) => d.gap?
 // quality one). The Refinery numbers these entries per deposit; here the rows of the
 // focused locations and deposits are combined per entry number, weighting each row's
 // bands by its SCU (SCU mode) or by its scans (count mode).
-const ENTRY_COLORS = ['#4c8dff', '#f5a524', '#3fb68b', '#e5534b', '#a371f7', '#17c3b2']
+const ENTRY_COLORS = CATEGORICAL
 const entryColor = (n) => ENTRY_COLORS[(n - 1) % ENTRY_COLORS.length]
 
 const entries = computed(() => {

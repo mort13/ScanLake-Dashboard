@@ -145,7 +145,8 @@ import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import Plotly from 'plotly.js-dist-min'
 import { EditorView, basicSetup } from 'codemirror'
 import { sql } from '@codemirror/lang-sql'
-import { oneDark } from '@codemirror/theme-one-dark'
+import { amberTheme } from '@/lib/editorTheme'
+import { colorscaleFor, plotlyBase, SURFACE_GAP } from '@/lib/chartTheme'
 import { useDbStore } from '@/stores/db'
 import { useDashboardStore } from '@/stores/dashboard'
 import ResultTable from './ResultTable.vue'
@@ -185,12 +186,12 @@ LIMIT 2000`
 onMounted(() => {
   sqlEditor = new EditorView({
     doc: DEFAULT_SQL,
-    extensions: [basicSetup, sql(), oneDark],
+    extensions: [basicSetup, sql(), amberTheme],
     parent: sqlEditorEl.value,
   })
   chartSqlEditor = new EditorView({
     doc: DEFAULT_CHART_SQL,
-    extensions: [basicSetup, sql(), oneDark],
+    extensions: [basicSetup, sql(), amberTheme],
     parent: chartSqlEditorEl.value,
   })
   if (db.isReady) loadSchema()
@@ -270,23 +271,21 @@ function renderPreview() {
   if (!previewEl.value || previewRows.value.length === 0) return
   const rows = previewRows.value
   const layout = {
-    paper_bgcolor: 'transparent',
-    plot_bgcolor: 'rgba(255,255,255,0.03)',
-    font: { color: '#c9d1d9', size: 12 },
+    ...plotlyBase(),
     margin: { t: 10, r: 16, b: 48, l: 52 },
     showlegend: false,
-    xaxis: { gridcolor: 'rgba(255,255,255,0.07)' },
-    yaxis: { gridcolor: 'rgba(255,255,255,0.07)' },
   }
 
   let data = []
   if (cbType.value === 'pie') {
-    data = [{ type: 'pie', labels: rows.map((r) => r[cbX.value]), values: rows.map((r) => r[cbY.value]), textinfo: 'label+percent' }]
+    data = [{ type: 'pie', labels: rows.map((r) => r[cbX.value]), values: rows.map((r) => r[cbY.value]), textinfo: 'label+percent',
+      marker: { line: SURFACE_GAP } }]
   } else if (cbType.value === 'scatter') {
     data = [{ type: 'scatter', mode: 'markers', x: rows.map((r) => r[cbX.value]), y: rows.map((r) => r[cbY.value]),
-      marker: { color: cbColor.value ? rows.map((r) => r[cbColor.value]) : undefined, colorscale: 'Viridis', showscale: !!cbColor.value, size: 6, opacity: 0.8 } }]
+      marker: { color: cbColor.value ? rows.map((r) => r[cbColor.value]) : '#ffb000', colorscale: colorscaleFor('Viridis'), showscale: !!cbColor.value, size: 8, opacity: 0.8 } }]
   } else {
-    data = [{ type: 'bar', x: rows.map((r) => r[cbX.value]), y: rows.map((r) => r[cbY.value]), orientation: cbOrientation.value }]
+    data = [{ type: 'bar', x: rows.map((r) => r[cbX.value]), y: rows.map((r) => r[cbY.value]), orientation: cbOrientation.value,
+      marker: { color: '#c68206', line: SURFACE_GAP } }]
   }
 
   Plotly.react(previewEl.value, data, layout, { responsive: true, displayModeBar: false })
