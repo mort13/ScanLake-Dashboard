@@ -68,9 +68,8 @@
                   <td><NumCell :value="l.m.scu" :width="numWidth.scu" /></td>
                   <td><NumCell :value="l.m.resistance" :width="numWidth.resistance" /></td>
                   <td><NumCell :value="l.m.instability" :width="numWidth.instability" /></td>
-                  <td :title="l.m.gap ? `${l.m.gap.n} ${l.m.gap.n === 1 ? 'gap' : 'gaps'}` : 'No gaps measured'">
-                    {{ l.m.gap ? formatGap(l.m.gap.avg) : '–' }}
-                  </td>
+                  <td :title="spacingDetail(l.m.distance, 'distance')">{{ spacingText(l.m.distance, 'distance') }}</td>
+                  <td :title="spacingDetail(l.m.gap, 'gap')">{{ spacingText(l.m.gap, 'gap') }}</td>
                 </tr>
               </tbody>
             </table>
@@ -120,6 +119,7 @@
         <div class="loc-charts">
           <section class="loc-chart">
             <h3>Deposits <small>share of the deposit that is {{ material }}</small></h3>
+            <div class="split-head" aria-hidden="true" />
             <ul @mouseleave="hover = null">
               <li
                 v-for="d in depositRows"
@@ -137,26 +137,30 @@
           </section>
 
           <section class="loc-chart">
-            <h3>Time between clusters <small>average, per deposit</small></h3>
+            <h3>Between clusters <small>average, per deposit</small></h3>
+            <div class="split-head" aria-hidden="true"><span /><span>distance</span><span>time</span></div>
             <ul @mouseleave="hover = null">
               <li
                 v-for="d in depositRows"
                 :key="d.deposit"
+                class="split-row"
                 :class="[depClass(d), { pinned: isPinned('deposit', d.deposit) }]"
-                :title="gapTitle(d)"
                 @mouseenter="hover = { type: 'deposit', name: d.deposit }"
                 @click="toggle('deposit', d.deposit)"
               >
                 <span class="bar-name">{{ d.deposit }}</span>
-                <span class="bar-track">
-                  <span v-if="d.gap" :style="{ width: (d.gap.avg / maxGap) * 100 + '%' }" />
-                </span>
-                <span class="bar-value">{{ d.gap ? formatGap(d.gap.avg) : '–' }}</span>
+                <template v-for="metric in ['distance', 'gap']" :key="metric">
+                  <span class="bar-track" :title="spacingDetail(d[metric], metric)">
+                    <span v-if="d[metric]" :style="{ width: (d[metric].avg / maxSpacing[metric]) * 100 + '%' }" />
+                  </span>
+                  <span class="bar-value" :title="spacingDetail(d[metric], metric)">{{ spacingText(d[metric], metric) }}</span>
+                </template>
               </li>
             </ul>
             <p class="loc-hint">
-              Time between consecutive clusters of the deposit; hover a bar for the median.
-              {{ scopeKeys ? '' : 'Averaged over the locations, weighted by the number of gaps.' }}
+              Distance from a cluster to the nearest other cluster of the deposit (from uploaded ship positions),
+              and time between consecutive clusters of the deposit; hover for the median.
+              {{ scopeKeys ? '' : 'Averaged over the locations, weighted by the clusters and gaps they rest on.' }}
             </p>
           </section>
         </div>
@@ -170,10 +174,13 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDbStore } from '@/stores/db'
 import { useResultsStore } from '@/stores/results'
-import { formatCell, formatGap, intWeight, BAND_LABELS, BAND_COLUMNS } from '@/lib/results'
+import { formatCell, intWeight, BAND_LABELS, BAND_COLUMNS } from '@/lib/results'
 import NumCell from '@/components/NumCell.vue'
 import { CATEGORICAL } from '@/lib/chartTheme'
-import { REGION_TABLE, loadRegionConcentrations, locationKey, locationName } from '@/lib/regionData'
+import {
+  REGION_TABLE, loadRegionConcentrations, locationKey, locationName,
+  loadDepositDistances, combineSpacing, spacingText, spacingDetail,
+} from '@/lib/regionData'
 
 const props = defineProps({
   material: { type: String, required: true },
@@ -187,6 +194,7 @@ const { materialSelection: selection, qualityMode } = storeToRefs(results)
 
 const locations = ref([]) // { key, system, gravity_well, region, share, presence, materialScans }
 const rows = ref([]) // this material's rows of the results table
+const distances = ref(new Map()) // `${locationKey}|${deposit}` → {avg, median, n}: distance between the deposit's clusters there
 const scanRows = ref([]) // { capture_id, key, deposit, mass, resistance, instability } of the scans containing it
 const loading = ref(false)
 const error = ref(null)
@@ -257,11 +265,13 @@ function figures(keys, deposits) {
   let scu = 0
   let gapSum = 0
   let gapN = 0
+  const dist = [] // distance between clusters of each deposit (one row per location x deposit)
   const seen = new Set()
   for (const r of rows.value) {
     if (keys && !keys.has(locationKey(r))) continue
     if (deposits?.size && !deposits.has(r.deposit)) continue
     scu += num(r.total_scu) ?? 0
+    dist.push(distances.value.get(`${locationKey(r)}|${r.deposit}`))
     // Time between clusters of the deposit, weighted by how many gaps it is based on
     const n = num(r.deposit_cluster_gaps)
     if (n && r.deposit_avg_cluster_gap_seconds != null) {
@@ -284,6 +294,7 @@ function figures(keys, deposits) {
     instability: avg('instability'),
     scu: rocks ? scu / rocks : null,
     gap: gapN ? { avg: gapSum / gapN, n: gapN } : null,
+    distance: combineSpacing(dist),
   }
 }
 
@@ -303,6 +314,7 @@ const COLUMNS = [
   { key: 'scu', label: 'avg SCU', title: 'Average SCU of this material in a rock at the location' },
   { key: 'resistance', label: 'avg resistance' },
   { key: 'instability', label: 'avg instability' },
+  { key: 'distance', label: 'distance between clusters', title: 'Average distance from a cluster to the nearest other cluster of the same deposit, for the deposits containing this material' },
   { key: 'gap', label: 'time between clusters', title: 'Average time between clusters of the deposits containing this material' },
 ]
 const sort = ref({ column: null, desc: false })
@@ -313,7 +325,10 @@ function toggleSort(column) {
   else sort.value = { column: null, desc: false }
 }
 const sortValue = (l, key) =>
-  key === 'name' ? locationName(l) : key === 'share' ? l.share : key === 'gap' ? l.m.gap?.avg ?? null : l.m[key]
+  key === 'name' ? locationName(l)
+    : key === 'share' ? l.share
+    : key === 'gap' || key === 'distance' ? l.m[key]?.avg ?? null
+    : l.m[key]
 const sortedLocationRows = computed(() => {
   const { column, desc } = sort.value
   if (!column) return locationRows.value
@@ -345,12 +360,14 @@ const maxShare = computed(() => Math.max(1, ...locations.value.map((l) => l.shar
 //   presence — how many of the deposit's scans contain it
 //   gap      — time between clusters; the value is per location x deposit (repeated on each
 //              material row), so it is taken once per location and weighted by its gap count
+//   distance — distance between clusters, per location x deposit as well, weighted by its clusters
 const depositRows = computed(() => {
   const byDeposit = new Map()
   for (const r of rows.value) {
     if (scopeKeys.value && !scopeKeys.value.has(locationKey(r))) continue
     let d = byDeposit.get(r.deposit)
-    if (!d) byDeposit.set(r.deposit, (d = { deposit: r.deposit, weighted: 0, scans: 0, hits: 0, keys: new Set(), gaps: new Map() }))
+    if (!d) byDeposit.set(r.deposit, (d = { deposit: r.deposit, weighted: 0, scans: 0, hits: 0, keys: new Set(), gaps: new Map(), dists: [] }))
+    d.dists.push(distances.value.get(`${locationKey(r)}|${r.deposit}`))
     const w = num(r.composition_scans) ?? 0
     d.weighted += (num(r.avg_share_pct) ?? 0) * w
     d.scans += w
@@ -382,12 +399,16 @@ const depositRows = computed(() => {
               median: g.length === 1 ? g[0].median : null,
             }
           : null,
+        distance: combineSpacing(d.dists),
       }
     })
     .sort((a, b) => b.share - a.share || a.deposit.localeCompare(b.deposit))
 })
 const maxDepositShare = computed(() => Math.max(1, ...depositRows.value.map((d) => d.share)))
-const maxGap = computed(() => Math.max(1, ...depositRows.value.map((d) => d.gap?.avg ?? 0)))
+const maxSpacing = computed(() => {
+  const max = (metric) => Math.max(1, ...depositRows.value.map((d) => d[metric]?.avg ?? 0))
+  return { gap: max('gap'), distance: max('distance') }
+})
 
 // ── quality bands per entry ──────────────────────────────────────
 // A material can appear more than once in a rock (say a bulk entry and a small, higher
@@ -441,11 +462,6 @@ function depClass(d) {
   const hit = (!fd.size || fd.has(d.deposit)) && (!fl.size || [...fl].some((k) => d.keys.has(k)))
   return hit ? 'hi' : 'dim'
 }
-function gapTitle(d) {
-  if (!d.gap) return 'No gaps measured'
-  const median = d.gap.median != null ? `median ${formatGap(d.gap.median)} · ` : ''
-  return `${median}${d.gap.n} ${d.gap.n === 1 ? 'gap' : 'gaps'}`
-}
 
 // ── data ─────────────────────────────────────────────────────────
 const q = (s) => "'" + String(s).replace(/'/g, "''") + "'"
@@ -460,7 +476,7 @@ async function load() {
     const hasEntries = db.resultTables.includes('material_entries_by_region')
     const entryTable = 'results_material_entries_by_region'
     const entryColumns = hasEntries ? (await db.describeTable(entryTable)).map((c) => c.column_name) : []
-    const [{ cells }, data, scans, entryData] = await Promise.all([
+    const [{ cells }, data, scans, entryData, dist] = await Promise.all([
       loadRegionConcentrations(db, results, columns),
       db.runQuery(
         `SELECT system, gravity_well, region, deposit, avg_share_pct, composition_scans, material_scans, total_scu,
@@ -482,7 +498,10 @@ async function load() {
              FROM "${entryTable}" WHERE material = ${q(props.material)} AND ${results.buildWhere(entryColumns)}`,
           )
         : [],
+      // Looked up per location x deposit of the material's rows, which the filters already narrowed
+      loadDepositDistances(db),
     ])
+    distances.value = new Map(dist.map((d) => [`${d.key}|${d.deposit}`, d]))
     const mine = cells.filter((c) => c.material === props.material)
     mine.sort((a, b) => b.share - a.share || locationName(a).localeCompare(locationName(b)))
     locations.value = mine
@@ -497,6 +516,7 @@ async function load() {
     error.value = err.message
     locations.value = []
     rows.value = []
+    distances.value = new Map()
     scanRows.value = []
     entryRows.value = []
   } finally {

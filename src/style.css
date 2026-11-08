@@ -912,8 +912,6 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 .mat-share { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-muted); }
 .region-foot { margin-top: 6px; font-size: 11px; color: var(--text-subtle); }
 .region-materials.by-spacing li { grid-template-columns: minmax(0, 1fr) 40px 76px; }
-.region-card.static { cursor: default; }
-.region-card.static:hover { border-color: var(--border); }
 .card-options { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .seg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-sm, 6px); overflow: hidden; }
 .seg-btn {
@@ -1004,6 +1002,19 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 .loc-chart li.loc-total { cursor: default; }
 .loc-chart li.pinned { box-shadow: inset 2px 0 0 var(--accent); font-weight: 600; }
 .loc-clear { padding: 0 6px; margin-left: 8px; font-size: 11px; }
+
+/* Distance and time between clusters in two halves, the deposit named once. The
+   value columns are fixed so the bars of all rows start and end at the same place;
+   the Deposits panel beside it has an empty header of the same height. */
+.loc-chart li.split-row,
+.split-head { grid-template-columns: 96px minmax(0, 1fr) 52px minmax(0, 1fr) 72px; }
+.split-head {
+  display: grid; gap: 8px; padding: 0 4px; height: 14px; margin-bottom: 2px;
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-subtle);
+}
+/* Each label spans its half: bar and value */
+.split-head > span:nth-child(2) { grid-column: 2 / 4; }
+.split-head > span:nth-child(3) { grid-column: 4 / 6; }
 
 /* Rows and headers of side-by-side cards share one height so they line up */
 .loc-chart h3 { display: flex; align-items: center; min-height: 24px; }

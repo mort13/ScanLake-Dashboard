@@ -153,6 +153,51 @@ export function barScale(items, metric) {
   return (i) => (spacing.of(i) && max ? (spacing.of(i).avg / max) * 100 : 0)
 }
 
+/**
+ * Distances between clusters per location x deposit, for the detail pages:
+ * [{ key (locationKey), deposit, avg, median, n (clusters) }] of the deposits with one.
+ * `where` narrows the rows (SQL on system, gravity_well, region, deposit). Empty when
+ * the table isn't published.
+ */
+export async function loadDepositDistances(db, where = '1=1') {
+  if (!db.resultTables.includes(DISTANCE_TABLE)) return []
+  const rows = await db.runQuery(
+    `SELECT system, gravity_well, region, deposit, deposit_clusters AS n,
+            deposit_avg_nearest_cluster_m AS avg, deposit_median_nearest_cluster_m AS median
+     FROM "results_${DISTANCE_TABLE}" WHERE deposit_avg_nearest_cluster_m IS NOT NULL AND ${where}`,
+  )
+  return rows.map((r) => ({
+    key: locationKey(r),
+    deposit: r.deposit,
+    avg: Number(r.avg),
+    median: r.median == null ? null : Number(r.median),
+    n: Number(r.n),
+  }))
+}
+
+/** Several {avg, median, n} as one: the averages weighted by n; medians can't be combined, so one survives only alone. */
+export function combineSpacing(list) {
+  const items = list.filter((x) => x?.n && x.avg != null)
+  const n = items.reduce((s, x) => s + x.n, 0)
+  if (!n) return null
+  return {
+    n,
+    avg: items.reduce((s, x) => s + x.avg * x.n, 0) / n,
+    median: items.length === 1 ? items[0].median : null,
+  }
+}
+
+/** The text of a time ('gap') or distance figure: "–" when there is none. */
+export const spacingText = (v, metric) => SPACING[metric].format(v?.avg ?? null)
+
+/** Hover text of a detail page's time or distance bar: the median when known and what the average rests on. */
+export function spacingDetail(v, metric) {
+  if (!v) return metric === 'gap' ? 'No gaps measured' : 'No distances measured'
+  const median = v.median != null ? `median ${SPACING[metric].format(v.median)} · ` : ''
+  const unit = metric === 'gap' ? (v.n === 1 ? 'gap' : 'gaps') : v.n === 1 ? 'cluster' : 'clusters'
+  return `${median}${v.n} ${unit}`
+}
+
 /** Hover text of a card row for a spacing figure: what its average is based on. */
 export function spacingTitle(item, metric) {
   const v = SPACING[metric].of(item)

@@ -31,6 +31,7 @@
         <div class="loc-charts">
           <section class="loc-chart">
             <h3>Deposits <small>share of the scans here</small></h3>
+            <div class="split-head" aria-hidden="true" />
             <ul @mouseleave="hover = null">
               <li
                 v-for="d in deposits"
@@ -47,23 +48,31 @@
           </section>
 
           <section class="loc-chart">
-            <h3>Time between clusters <small>average, per deposit</small></h3>
+            <h3>Between clusters <small>average, per deposit</small></h3>
+            <div class="split-head" aria-hidden="true"><span /><span>distance</span><span>time</span></div>
             <ul @mouseleave="hover = null">
               <li
-                v-for="g in gapRows"
-                :key="g.deposit ?? 'all'"
-                :class="g.deposit ? [depClass(g.dep), { pinned: isPinned('deposit', g.deposit) }] : 'loc-total'"
-                :title="`${g.median != null ? `median ${formatGap(g.median)} · ` : ''}${g.n} ${g.n === 1 ? 'gap' : 'gaps'}`"
-                @mouseenter="hover = g.deposit ? { type: 'deposit', name: g.deposit } : null"
-                @click="g.deposit && toggle('deposit', g.deposit)"
+                v-for="s in spacingRows"
+                :key="s.deposit ?? 'all'"
+                class="split-row"
+                :class="s.deposit ? [depClass(s.dep), { pinned: isPinned('deposit', s.deposit) }] : 'loc-total'"
+                @mouseenter="hover = s.deposit ? { type: 'deposit', name: s.deposit } : null"
+                @click="s.deposit && toggle('deposit', s.deposit)"
               >
-                <span class="bar-name">{{ g.deposit ?? 'All deposits' }}</span>
-                <span class="bar-track"><span :style="{ width: (g.avg / maxGap) * 100 + '%' }" /></span>
-                <span class="bar-value">{{ formatGap(g.avg) }}</span>
+                <span class="bar-name">{{ s.deposit ?? 'All deposits' }}</span>
+                <template v-for="metric in ['distance', 'gap']" :key="metric">
+                  <span class="bar-track" :title="spacingDetail(s[metric], metric)">
+                    <span v-if="s[metric]" :style="{ width: (s[metric].avg / maxSpacing[metric]) * 100 + '%' }" />
+                  </span>
+                  <span class="bar-value" :title="spacingDetail(s[metric], metric)">{{ spacingText(s[metric], metric) }}</span>
+                </template>
               </li>
             </ul>
-            <p v-if="gapRows.length === 0" class="loc-hint">Not enough consecutive clusters here.</p>
-            <p v-else class="loc-hint">Time between consecutive clusters of the deposit; hover a bar for the median.</p>
+            <p v-if="!hasSpacing" class="loc-hint">Not enough clusters here to measure.</p>
+            <p v-else class="loc-hint">
+              Distance from a cluster to the nearest other cluster of the deposit (from uploaded ship positions),
+              and time between consecutive clusters of the deposit; hover for the median.
+            </p>
           </section>
         </div>
 
@@ -133,13 +142,15 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDbStore } from '@/stores/db'
 import { useResultsStore } from '@/stores/results'
-import { formatCell, formatGap, QUALITY_BANDS as BANDS, BAND_LABELS, BAND_COLUMNS } from '@/lib/results'
+import { formatCell, QUALITY_BANDS as BANDS, BAND_LABELS, BAND_COLUMNS } from '@/lib/results'
+import { loadDepositDistances, combineSpacing, spacingText, spacingDetail } from '@/lib/regionData'
 
 const TABLE = 'results_deposit_materials_by_region'
 const NO_BANDS = BANDS.map(() => 0)
 
 const props = defineProps({
-  // { system, gravity_well, region } of the clicked card
+  // { system, gravity_well, region, byWell } of the clicked card; with byWell the
+  // card stands for every region of the gravity well combined
   location: { type: Object, required: true },
 })
 const emit = defineEmits(['close'])
@@ -147,23 +158,24 @@ const emit = defineEmits(['close'])
 const db = useDbStore()
 const results = useResultsStore()
 
-// { deposit, share, scans, scu, materials: Map(material → share in deposit), bands: Map(material → {scu, count}), gap: {avg, median, n} | null }
+// { deposit, share, scans, scu, materials: Map(material → share in deposit), bands: Map(material → {scu, count}),
+//   gap: {avg, median, n} | null (time between clusters), distance: {avg, median, n} | null }
 const deposits = ref([])
 const materials = ref([]) // { material, share, scuTotal | null, materialScans, bands: {scu, count} | null }
 const scanRows = ref([]) // { capture_id, deposit, material, mass, resistance, instability } passing the filters
-const gaps = ref([]) // { deposit | null (all), avg, median | null, n }
 const summary = ref({ scans: 0, share: 0, depositScans: 0, avgScu: 0 })
+const regionCount = ref(0) // named regions combined into a gravity well's view
 const loading = ref(false)
 const error = ref(null)
 const { qualityMode, selection } = storeToRefs(results) // kept in the store across tab switches
 const hover = ref(null) // { type: 'deposit' | 'material', name } under the pointer
 
 const title = computed(() => props.location.region ?? props.location.gravity_well)
-const subtitle = computed(() =>
-  props.location.region
-    ? `${props.location.system} · ${props.location.gravity_well}`
-    : props.location.system,
-)
+const subtitle = computed(() => {
+  const { system, gravity_well: well, region, byWell } = props.location
+  if (byWell) return regionCount.value > 1 ? `${system} · ${regionCount.value} regions combined` : system
+  return region ? `${system} · ${well}` : system
+})
 const filterNote = computed(() => {
   const names = (list) => list.map((f) => (f.negated ? '!' : '') + f.value)
   const parts = [
@@ -176,14 +188,25 @@ const filterNote = computed(() => {
 
 const maxDeposit = computed(() => Math.max(1, ...deposits.value.map((d) => d.share)))
 const maxMaterial = computed(() => Math.max(1, ...materials.value.map((m) => m.share)))
-const maxGap = computed(() => Math.max(1, ...gaps.value.map((g) => g.avg)))
 const qualityRows = computed(() => materials.value)
 const hasQuality = computed(() => materials.value.some((m) => m.bands))
 const depByName = computed(() => new Map(deposits.value.map((d) => [d.deposit, d])))
-// Gap rows carry their deposit so the hover linking can reuse depClass
-const gapRows = computed(() =>
-  gaps.value.map((g) => ({ ...g, dep: g.deposit ? depByName.value.get(g.deposit) : null })),
-)
+// Distance and time between clusters: a row per deposit, in the order of the deposits
+// chart next to it, then all deposits together (each average weighted by what it rests on)
+const spacingRows = computed(() => {
+  const rows = deposits.value.map((d) => ({ deposit: d.deposit, dep: d, gap: d.gap, distance: d.distance }))
+  const all = {
+    deposit: null,
+    gap: combineSpacing(rows.map((r) => r.gap && { ...r.gap, median: null })),
+    distance: combineSpacing(rows.map((r) => r.distance && { ...r.distance, median: null })),
+  }
+  return all.gap || all.distance ? [...rows, all] : rows
+})
+const hasSpacing = computed(() => spacingRows.value.some((r) => r.gap || r.distance))
+const maxSpacing = computed(() => {
+  const max = (metric) => Math.max(1, ...spacingRows.value.map((r) => r[metric]?.avg ?? 0))
+  return { gap: max('gap'), distance: max('distance') }
+})
 
 // ── selection and hover ──────────────────────────────────────────
 // Clicked items stay highlighted (any number of deposits and materials); the item
@@ -294,20 +317,23 @@ async function load() {
   loading.value = true
   error.value = null
   try {
-    const { system, gravity_well: well, region } = props.location
+    const { system, gravity_well: well, region, byWell } = props.location
     const place =
-      `system = ${q(system)} AND gravity_well = ${q(well)} AND ` +
-      (region == null ? 'region IS NULL' : `region = ${q(region)}`)
+      `system = ${q(system)} AND gravity_well = ${q(well)}` +
+      (byWell ? '' : ` AND ${region == null ? 'region IS NULL' : `region = ${q(region)}`}`)
     const columns = (await db.describeTable(TABLE)).map((c) => c.column_name)
     // The material filter only chooses what is listed: deposit sizes and
     // the share denominators are always taken over every material
     const rows = await db.runQuery(
-      `SELECT deposit, material, deposit_share_pct, deposit_scans, total_scu,
-              composition_scans, material_scans, avg_share_pct, location_scans,
-              deposit_cluster_gaps, deposit_avg_cluster_gap_seconds, deposit_median_cluster_gap_seconds,
-              ${BAND_COLUMNS.scu.join(', ')}, ${BAND_COLUMNS.count.join(', ')}
-       FROM ${TABLE} WHERE ${place} AND ${results.buildWhere(columns, ['material'])}`,
+      byWell
+        ? wellRowsSql(place, columns)
+        : `SELECT deposit, material, deposit_share_pct, deposit_scans, total_scu,
+                  composition_scans, material_scans, avg_share_pct, location_scans,
+                  deposit_cluster_gaps, deposit_avg_cluster_gap_seconds, deposit_median_cluster_gap_seconds,
+                  ${BAND_COLUMNS.scu.join(', ')}, ${BAND_COLUMNS.count.join(', ')}
+           FROM ${TABLE} WHERE ${place} AND ${results.buildWhere(columns, ['material'])}`,
     )
+    regionCount.value = byWell ? Number(rows[0]?.regions ?? 0) : 0
     const listed = new Set(
       (
         await db.runQuery(
@@ -315,17 +341,24 @@ async function load() {
         )
       ).map((r) => r.material),
     )
-    build(rows, listed)
-    buildGaps()
+    // Distances per deposit; a gravity well combines those of its regions the filters keep
+    const dist = await loadDepositDistances(
+      db,
+      `${place} AND ${results.buildWhere(['system', 'gravity_well', 'region', 'deposit'])}`,
+    )
+    const distances = new Map()
+    for (const d of dist) distances.set(d.deposit, [...(distances.get(d.deposit) ?? []), d])
+    build(rows, listed, new Map([...distances].map(([dep, list]) => [dep, combineSpacing(list)])))
     // Picks that the new data no longer contains are dropped
     selection.value = selection.value.filter((i) =>
       i.type === 'deposit' ? depByName.value.has(i.name) : materials.value.some((m) => m.material === i.name),
     )
-    // The scans at this place, one row per material, narrowed by the same deposit/material filters
+    // The scans at this place, one row per material, narrowed by the same filters
+    // (the location filter matters for a gravity well: it can pick some of its regions)
     scanRows.value = await db.runQuery(
       `SELECT * FROM (
          SELECT s.capture_id, s.deposit, c.type AS material, s.mass, s.resistance, s.instability
-         FROM (SELECT * FROM scans WHERE ${place}) s
+         FROM (SELECT * FROM scans WHERE ${place} AND ${results.buildWhere(['system', 'gravity_well', 'region'])}) s
          LEFT JOIN compositions c ON s.capture_id = c.capture_id
        ) WHERE ${results.buildWhere(['deposit', 'material'])}`,
     )
@@ -333,14 +366,69 @@ async function load() {
     error.value = err.message
     deposits.value = []
     materials.value = []
-    gaps.value = []
     scanRows.value = []
   } finally {
     loading.value = false
   }
 }
 
-function build(rows, listed) {
+/**
+ * A gravity well's rows in the shape of one region's: each deposit x material
+ * combined over the well's regions (those passing the filters). Scan counts and
+ * SCU add up; the deposit's share is its scans over the well's; a material's share
+ * in a deposit is weighted by the deposit's rocks in each region (regions without
+ * the material count as 0); quality bands are weighted by the material's SCU or
+ * scans there, time between clusters by its gaps. Medians can't be combined, so a
+ * deposit keeps one only when a single region measured it.
+ */
+function wellRowsSql(place, columns) {
+  const where = results.buildWhere(columns, ['material'])
+  // The well's scans: every region the location filter keeps, whatever deposits it has
+  const whereRegions = results.buildWhere(columns, ['material', 'deposit'])
+  const band = (c, w) =>
+    `coalesce(sum(r.${c} * r.${w}) / nullif(sum(CASE WHEN r.${c} IS NOT NULL THEN r.${w} END), 0), avg(r.${c})) AS ${c}`
+  return `
+    WITH r AS (SELECT * FROM ${TABLE} WHERE ${place} AND ${where}),
+    dep_region AS (
+      SELECT region, deposit, max(deposit_scans) AS deposit_scans, max(composition_scans) AS composition_scans,
+             max(deposit_cluster_gaps) AS gaps, max(deposit_avg_cluster_gap_seconds) AS gap_avg,
+             max(deposit_median_cluster_gap_seconds) AS gap_median
+      FROM r GROUP BY region, deposit
+    ),
+    dep AS (
+      SELECT deposit, sum(deposit_scans) AS deposit_scans, sum(composition_scans) AS composition_scans,
+             sum(gaps) FILTER (WHERE gap_avg IS NOT NULL) AS gaps,
+             sum(gap_avg * gaps) FILTER (WHERE gap_avg IS NOT NULL)
+               / sum(gaps) FILTER (WHERE gap_avg IS NOT NULL) AS gap_avg,
+             CASE WHEN count(gap_avg) = 1 THEN max(gap_median) END AS gap_median
+      FROM dep_region GROUP BY deposit
+    ),
+    well AS (
+      SELECT sum(location_scans) AS location_scans, count(region) AS regions FROM (
+        SELECT region, max(location_scans) AS location_scans
+        FROM ${TABLE} WHERE ${place} AND ${whereRegions} GROUP BY region
+      )
+    )
+    SELECT r.deposit, r.material,
+           round(100.0 * any_value(d.deposit_scans) / any_value(well.location_scans), 2) AS deposit_share_pct,
+           any_value(d.deposit_scans)::BIGINT AS deposit_scans,
+           sum(r.total_scu) AS total_scu,
+           any_value(d.composition_scans)::BIGINT AS composition_scans,
+           sum(r.material_scans)::BIGINT AS material_scans,
+           sum(r.avg_share_pct * r.composition_scans) / nullif(any_value(d.composition_scans), 0) AS avg_share_pct,
+           any_value(well.location_scans)::BIGINT AS location_scans,
+           any_value(well.regions)::BIGINT AS regions,
+           any_value(d.gaps)::BIGINT AS deposit_cluster_gaps,
+           any_value(d.gap_avg) AS deposit_avg_cluster_gap_seconds,
+           any_value(d.gap_median) AS deposit_median_cluster_gap_seconds,
+           ${BAND_COLUMNS.scu.map((c) => band(c, 'total_scu')).join(', ')},
+           ${BAND_COLUMNS.count.map((c) => band(c, 'material_scans')).join(', ')}
+    FROM r JOIN dep d ON d.deposit IS NOT DISTINCT FROM r.deposit CROSS JOIN well
+    GROUP BY r.deposit, r.material`
+}
+
+// `distances`: Map(deposit → {avg, median, n}) of the distance between its clusters
+function build(rows, listed, distances) {
   const num = (v) => (v == null ? null : Number(v))
   const bandsOfRow = (r) =>
     r[BAND_COLUMNS.scu[0]] == null
@@ -369,6 +457,7 @@ function build(rows, listed) {
               median: num(r.deposit_median_cluster_gap_seconds),
             }
           : null,
+        distance: distances.get(r.deposit) ?? null,
       }
       byDeposit.set(r.deposit, d)
     }
@@ -435,19 +524,6 @@ function build(rows, listed) {
     depositScans,
     avgScu: depositScans ? totalScu / depositScans : 0,
   }
-}
-
-// Per deposit as published; the overall average weighs deposits by their number of gaps
-// (medians can't be combined, so the "all deposits" row has none)
-function buildGaps() {
-  const list = deposits.value.filter((d) => d.gap?.avg != null)
-  const n = list.reduce((s, d) => s + d.gap.n, 0)
-  gaps.value = list.length
-    ? [
-        ...list.map((d) => ({ deposit: d.deposit, ...d.gap })),
-        { deposit: null, n, avg: list.reduce((s, d) => s + d.gap.avg * d.gap.n, 0) / n, median: null },
-      ]
-    : []
 }
 
 const onKey = (e) => { if (e.key === 'Escape') emit('close') }

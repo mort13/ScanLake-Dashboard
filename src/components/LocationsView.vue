@@ -39,10 +39,9 @@
         v-for="card in shownCards"
         :key="card.key"
         class="region-card"
-        :class="{ static: results.groupByWell }"
-        :role="results.groupByWell ? undefined : 'button'"
-        :tabindex="results.groupByWell ? undefined : 0"
-        :title="results.groupByWell ? 'All regions of the gravity well combined' : 'Show details'"
+        role="button"
+        tabindex="0"
+        :title="results.groupByWell ? 'Show details, all regions of the gravity well combined' : 'Show details'"
         @click="openDetail(card)"
         @keydown.enter="openDetail(card)"
       >
@@ -216,9 +215,9 @@ function rowTitle(m) {
 }
 
 function openDetail(card) {
-  if (results.groupByWell) return // a gravity well combines regions; there is no detail page for it
   results.selection = []
-  detail.value = card
+  // A gravity well's card combines its regions, and so does its detail
+  detail.value = { ...card, byWell: results.groupByWell }
 }
 
 async function exportCsv() {
