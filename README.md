@@ -10,7 +10,7 @@ The files are cached in the browser (Cache Storage, `scanlake-parquet`). Each lo
 
 An open tab checks the manifest again every 15 minutes. When a file's hash has changed, it downloads only that file, points the view at it and re-runs the panels and filter suggestions. If the check fails, the loaded data stays in place. All subsequent queries run entirely in the browser — no backend is needed for query execution.
 
-The Cloudflare Pages Function at `functions/api/[[path]].js` forwards requests to `gateway.scanlake.rocks`, injecting the `GATEWAY_API_KEY` secret server-side so it is never exposed to the browser.
+The Cloudflare Pages Function at `functions/api/[[path]].js` forwards requests to `gateway.scanlake.rocks`, injecting the `GATEWAY_API_KEY` secret server-side so it is never exposed to the browser. It forwards only GET requests for the files the app reads: `derived/manifest.json`, `derived/consolidated/{scans,compositions}.parquet` and `derived/results/<name>.parquet` (allowlist in `functions/lib/proxy-paths.js`). Every other `/api/*` path, including the raw bucket (`/api/files`), the bucket listings and the opt-in ship positions, returns 404 without reaching the Gateway. The query string is dropped. A file the app starts reading needs its path added there. `npm test` runs the proxy tests.
 
 ## Features
 

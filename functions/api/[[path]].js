@@ -2,18 +2,28 @@
  * Cloudflare Pages Function — server-side proxy for the ScanLake Gateway.
  *
  * The GATEWAY_API_KEY is stored as a Cloudflare Pages secret and is NEVER
- * exposed to the browser. All /api/* requests from the Vue app are forwarded
- * here, the key is injected, then the response is streamed back.
+ * exposed to the browser. Only the derived files the Vue app reads are
+ * forwarded (see ../lib/proxy-paths.js); every other /api/* path is a 404.
+ * For those, the key is injected and the response is streamed back.
  *
  * Environment variables (set in CF Pages dashboard or wrangler.toml [vars]):
  *   GATEWAY_API_KEY  — sk_... secret key
  *   GATEWAY_URL      — defaults to https://gateway.scanlake.rocks
  */
 
+import { isAllowedPath } from '../lib/proxy-paths.js';
+
 const GATEWAY_BASE = 'https://gateway.scanlake.rocks';
 
 export async function onRequest(context) {
-  const { request, env, params } = context;
+  const { request, env } = context;
+
+  // Check the raw pathname, not params.path: params are percent-decoded, so
+  // "%2F" would turn into a slash there.
+  const url = new URL(request.url);
+  if (!isAllowedPath(url.pathname)) {
+    return jsonError(404, 'Not found');
+  }
 
   if (request.method === 'OPTIONS') {
     return new Response(null, {
@@ -32,12 +42,9 @@ export async function onRequest(context) {
     return jsonError(503, 'Gateway not configured');
   }
 
-  // params.path is an array like ['files'] or ['files', 'scans/2026/...']
-  const pathSegments = params.path ?? [];
-  const upstreamPath = pathSegments.join('/');
-
-  const url = new URL(request.url);
-  const upstreamUrl = `${GATEWAY_BASE}/api/${upstreamPath}${url.search}`;
+  // The allowlisted pathname is passed on as it is. The query string is dropped:
+  // the app sends none, and it must not steer the Gateway.
+  const upstreamUrl = `${GATEWAY_BASE}${url.pathname}`;
 
   // Forward only safe headers; strip cookies and auth
   const upstreamHeaders = new Headers();
