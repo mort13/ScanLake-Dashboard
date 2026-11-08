@@ -50,7 +50,7 @@
           <h3>{{ card.region ?? card.gravity_well }}</h3>
           <p>{{ card.region ? `${card.system} · ${card.gravity_well}` : card.system }}</p>
         </header>
-        <ol class="region-materials" :class="{ 'by-gap': results.cardMetric === 'gap' }">
+        <ol class="region-materials" :class="{ 'by-spacing': isSpacing(results.cardMetric) }">
           <li v-for="m in card.materials" :key="m.material" :title="rowTitle(m)">
             <span class="mat-name">{{ m.material }}</span>
             <span class="mat-bar"><span :style="{ width: m.pct + '%' }" /></span>
@@ -105,7 +105,7 @@ import { useResultsStore } from '@/stores/results'
 import { selectList, metaLast, prettyName, formatCell } from '@/lib/results'
 import { rowsToCsv, downloadCsv } from '@/lib/csv'
 import {
-  REGION_TABLE, loadRegionConcentrations, locationName, sortByMetric, metricText, barScale,
+  REGION_TABLE, loadRegionConcentrations, locationName, sortByMetric, metricText, barScale, isSpacing, spacingTitle,
 } from '@/lib/regionData'
 import LocationDetail from '@/components/LocationDetail.vue'
 import CardOptions from '@/components/CardOptions.vue'
@@ -189,7 +189,7 @@ async function loadCards() {
   const { locations, cells } = await loadRegionConcentrations(db, results, columns.value, { byWell: results.groupByWell })
   const byLoc = new Map([...locations].map(([key, l]) => [key, { ...l, materials: [] }]))
   for (const c of cells) {
-    byLoc.get(c.key)?.materials.push({ material: c.material, share: c.share, presence: c.presence, gap: c.gap })
+    byLoc.get(c.key)?.materials.push({ material: c.material, share: c.share, presence: c.presence, gap: c.gap, distance: c.distance })
   }
   cards.value = [...byLoc.values()]
     .filter((c) => c.materials.length)
@@ -210,8 +210,8 @@ const shownCards = computed(() =>
   }),
 )
 function rowTitle(m) {
-  return results.cardMetric === 'gap'
-    ? m.gap ? `Average over ${m.gap.n} ${m.gap.n === 1 ? 'gap' : 'gaps'}` : 'No gaps measured'
+  return isSpacing(results.cardMetric)
+    ? spacingTitle(m, results.cardMetric)
     : `Present in ${formatCell(m.presence)}% of scans`
 }
 

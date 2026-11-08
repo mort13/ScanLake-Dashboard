@@ -60,6 +60,14 @@ export function formatGap(seconds) {
   return s < 120 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`
 }
 
+/** Metres as "850 m", "4.2 km" or "37 km". */
+export function formatDistance(metres) {
+  if (metres == null) return '–'
+  if (metres < 1000) return `${Math.round(metres)} m`
+  const km = metres / 1000
+  return `${km.toLocaleString(undefined, { maximumFractionDigits: km < 10 ? 1 : 0 })} km`
+}
+
 // Quality bands of 100, as in the quality_<lo>_<hi>_<mode>_pct columns
 export const QUALITY_BANDS = ['0_100', '101_200', '201_300', '301_400', '401_500', '501_600', '601_700', '701_800', '801_900', '901_1000']
 export const BAND_LABELS = QUALITY_BANDS.map((b) => b.replace('_', '–'))

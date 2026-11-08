@@ -13,6 +13,12 @@
         title="Average time between clusters of the deposits containing the material"
         @click="results.cardMetric = 'gap'"
       >Time between clusters</button>
+      <button
+        class="seg-btn"
+        :class="{ active: results.cardMetric === 'distance' }"
+        title="Average distance from a cluster to the nearest other cluster of the same deposit, for the deposits containing the material (from uploaded ship positions)"
+        @click="results.cardMetric = 'distance'"
+      >Distance between clusters</button>
     </div>
     <button
       class="seg-btn"

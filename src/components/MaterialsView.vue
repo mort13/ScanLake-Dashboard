@@ -31,7 +31,7 @@
             <h3>{{ card.material }}</h3>
             <p>{{ card.locations.length }} {{ card.locations.length === 1 ? 'location' : 'locations' }}</p>
           </header>
-          <ol class="region-materials" :class="{ 'by-gap': results.cardMetric === 'gap' }">
+          <ol class="region-materials" :class="{ 'by-spacing': isSpacing(results.cardMetric) }">
             <li v-for="l in card.locations" :key="l.key" :title="rowTitle(l)">
               <span class="mat-name">{{ locationName(l) }}</span>
               <span class="mat-bar"><span :style="{ width: l.pct + '%' }" /></span>
@@ -53,7 +53,7 @@ import { useFiltersStore } from '@/stores/filters'
 import { useResultsStore } from '@/stores/results'
 import { formatCell } from '@/lib/results'
 import {
-  REGION_TABLE, loadRegionConcentrations, locationName, sortByMetric, metricText, barScale,
+  REGION_TABLE, loadRegionConcentrations, locationName, sortByMetric, metricText, barScale, isSpacing, spacingTitle,
 } from '@/lib/regionData'
 import MaterialDetail from '@/components/MaterialDetail.vue'
 import CardOptions from '@/components/CardOptions.vue'
@@ -90,9 +90,10 @@ const shownCards = computed(() =>
 )
 
 function rowTitle(l) {
-  return results.cardMetric === 'gap'
-    ? `${l.system} · ${l.gravity_well} · ${l.gap ? `average over ${l.gap.n} ${l.gap.n === 1 ? 'gap' : 'gaps'}` : 'no gaps measured'}`
-    : `${l.system} · ${l.gravity_well} · present in ${formatCell(l.presence)}% of scans there`
+  const where = `${l.system} · ${l.gravity_well}`
+  return isSpacing(results.cardMetric)
+    ? `${where} · ${spacingTitle(l, results.cardMetric).toLowerCase()}`
+    : `${where} · present in ${formatCell(l.presence)}% of scans there`
 }
 
 function open(card) {

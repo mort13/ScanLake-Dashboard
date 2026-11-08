@@ -911,7 +911,7 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 .mat-bar > span { display: block; height: 100%; background: var(--accent); }
 .mat-share { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-muted); }
 .region-foot { margin-top: 6px; font-size: 11px; color: var(--text-subtle); }
-.region-materials.by-gap li { grid-template-columns: minmax(0, 1fr) 40px 76px; }
+.region-materials.by-spacing li { grid-template-columns: minmax(0, 1fr) 40px 76px; }
 .region-card.static { cursor: default; }
 .region-card.static:hover { border-color: var(--border); }
 .card-options { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -925,6 +925,13 @@ code { font-family: ui-monospace, Consolas, 'Cascadia Code', monospace; font-siz
 .seg-btn + .seg-btn { border-left: 1px solid var(--border); }
 .seg-btn:hover { color: var(--text); }
 .seg-btn.active { color: var(--bg); text-shadow: none; background: var(--accent); }
+/* On a phone the card options get a row of their own, the three figures sharing its width */
+@media (max-width: 600px) {
+  .results-meta { flex-wrap: wrap; }
+  .card-options { flex-basis: 100%; }
+  .card-options .seg { flex-basis: 100%; }
+  .card-options .seg-btn { flex: 1; }
+}
 
 /* ── Location detail ───────────────────────────────────────────── */
 .loc-head { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }

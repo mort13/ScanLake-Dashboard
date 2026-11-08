@@ -24,7 +24,7 @@ export const useResultsStore = defineStore('results', () => {
   // Same for the Materials tab: the open material and what is picked inside it
   const materialDetail = ref(null) // material name
   // How the overview cards of both tabs are shown
-  const cardMetric = ref('share') // 'share' (concentration) | 'gap' (time between clusters)
+  const cardMetric = ref('share') // 'share' (concentration) | 'gap' (time between clusters) | 'distance' (distance between clusters)
   const groupByWell = ref(false) // group the locations by gravity well
   const materialSelection = ref([]) // [{ type: 'location' | 'deposit', name }]; a location's name is its key (lib/regionData.js)
 
