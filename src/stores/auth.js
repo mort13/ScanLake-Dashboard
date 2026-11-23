@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
-const AUTH_BASE = import.meta.env.VITE_AUTH_URL ?? 'https://auth.scanlake.rocks'
+export const AUTH_BASE = import.meta.env.VITE_AUTH_URL ?? 'https://auth.scanlake.rocks'
 
 /**
  * Optional Discord login, shared by every *.scanlake.rocks app through the
@@ -9,12 +9,14 @@ const AUTH_BASE = import.meta.env.VITE_AUTH_URL ?? 'https://auth.scanlake.rocks'
  * when the auth service is unreachable the dashboard just runs logged out.
  */
 export const useAuthStore = defineStore('auth', () => {
-  // { discord: { id, username, globalName, avatarUrl }, primaryUserId, userIds, profile: { userName, org } }
+  // { discord: { id, username, globalName, avatarUrl }, primaryUserId, userIds, profile: { userName, org }, apiTier, isAdmin }
   const me = ref(null)
   const status = ref('idle') // 'idle' | 'loading' | 'ready' | 'error'
 
   const isLoggedIn = computed(() => me.value !== null)
   const userIds = computed(() => me.value?.userIds ?? [])
+  // Shows the /ADMIN tab; Auth checks it again on every admin call
+  const isAdmin = computed(() => me.value?.isAdmin === true)
 
   async function load() {
     status.value = 'loading'
@@ -48,5 +50,5 @@ export const useAuthStore = defineStore('auth', () => {
     await load()
   }
 
-  return { me, status, isLoggedIn, userIds, load, login, logout }
+  return { me, status, isLoggedIn, userIds, isAdmin, load, login, logout }
 })

@@ -88,12 +88,18 @@ defineProps({
   view: { type: String, default: 'locations' },
 })
 
-const TABS = [
+const DATA_TABS = [
   { id: 'locations', label: 'Locations' },
   { id: 'materials', label: 'Materials' },
   { id: 'dashboard', label: 'Statistics' },
   { id: 'highscores', label: 'Highscores' },
 ]
+// API keys for everyone; the admin panel only for admins (Auth checks again on every call)
+const TABS = computed(() => [
+  ...DATA_TABS,
+  { id: 'api', label: 'API' },
+  ...(auth.isAdmin ? [{ id: 'admin', label: 'Admin' }] : []),
+])
 
 const displayName = computed(() => {
   const d = auth.me?.discord

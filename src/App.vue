@@ -4,9 +4,12 @@
     <SessionTicker />
 
     <div class="app-body">
-      <FilterSidebar v-show="view !== 'highscores'" :scope="view === 'locations' || view === 'materials' ? 'results' : 'dashboard'" @apply="onFiltersApply" />
+      <FilterSidebar v-show="isDataView && view !== 'highscores'" :scope="view === 'locations' || view === 'materials' ? 'results' : 'dashboard'" @apply="onFiltersApply" />
       <main class="dashboard-main">
-        <div v-if="db.status === 'idle' || db.status === 'initializing' || db.status === 'loading'" class="loading-overlay">
+        <!-- Account tabs talk to ScanLake Auth only: they don't wait for the data -->
+        <ApiView v-if="view === 'api'" />
+        <AdminView v-else-if="view === 'admin'" />
+        <div v-else-if="db.status === 'idle' || db.status === 'initializing' || db.status === 'loading'" class="loading-overlay">
           <span class="spinner lg" />
           <p>{{ db.loadingMessage || 'Initialising…' }}</p>
           <p v-if="db.loadingProgress.total > 0" class="progress-detail">
@@ -17,7 +20,7 @@
           <p>⚠ Failed to connect: {{ db.error }}</p>
           <button class="btn-primary" @click="db.init()">Retry</button>
         </div>
-        <template v-else>
+        <template v-if="db.status === 'ready'">
           <!-- Kept mounted while hidden: the grid and its charts size themselves to the page -->
           <DashboardGrid v-show="view === 'dashboard'" />
           <LocationsView v-if="view === 'locations'" />
@@ -32,7 +35,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useDbStore } from '@/stores/db'
 import { useFiltersStore } from '@/stores/filters'
 import { useDashboardStore } from '@/stores/dashboard'
@@ -46,9 +49,13 @@ import LocationsView from '@/components/LocationsView.vue'
 import MaterialsView from '@/components/MaterialsView.vue'
 import HighscoresView from '@/components/HighscoresView.vue'
 import QueryEditor from '@/components/QueryEditor.vue'
+import ApiView from '@/components/ApiView.vue'
+import AdminView from '@/components/AdminView.vue'
 
-const VIEWS = ['locations', 'materials', 'dashboard', 'highscores']
+const VIEWS = ['locations', 'materials', 'dashboard', 'highscores', 'api', 'admin']
 const DEFAULT_VIEW = VIEWS[0]
+// Tabs about the account (API keys) rather than the scan data
+const ACCOUNT_VIEWS = ['api', 'admin']
 
 const db = useDbStore()
 const filters = useFiltersStore()
@@ -64,6 +71,7 @@ const fromHash = () => {
   return VIEWS.includes(id) ? id : DEFAULT_VIEW
 }
 const view = ref(fromHash())
+const isDataView = computed(() => !ACCOUNT_VIEWS.includes(view.value))
 window.addEventListener('hashchange', () => { view.value = fromHash() })
 watch(view, (id) => {
   if (fromHash() !== id) history.replaceState(null, '', id === DEFAULT_VIEW ? location.pathname : `#${id}`)
